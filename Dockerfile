@@ -1,3 +1,4 @@
+# Reservaya Frontend Docker Image
 # Build stage
 FROM node:20-alpine AS build
 
