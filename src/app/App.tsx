@@ -1,14 +1,35 @@
 import { useState } from "react";
 import { LoginView } from "./components/LoginView";
+import { OwnerRegistrationView } from "./components/OwnerRegistrationView";
 import { GrillsCalendarView } from "./components/GrillsCalendarView";
 import { RequestDialog } from "./components/RequestDialog";
 import { MyRequests } from "./components/MyRequests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
-import { LogOut, Building, Flame, Calendar, List } from "lucide-react";
+import { LogOut, Building, Calendar, List } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
-import { Grill, Reservation, User } from "./types";
+import { Grill, Reservation, User, Owner } from "./types";
+
+// Mock owners database - simula propietarios registrados
+const REGISTERED_OWNERS: Owner[] = [
+  {
+    id: "owner-1",
+    firstName: "Juan",
+    lastName: "Pérez",
+    email: "juan.perez@email.com",
+    phone: "987654321",
+    departmentCode: "503A",
+  },
+  {
+    id: "owner-2",
+    firstName: "María",
+    lastName: "García",
+    email: "maria.garcia@email.com",
+    phone: "912345678",
+    departmentCode: "807B",
+  },
+];
 
 // Mock data - Torre A: 2 parrillas, Torre B: 6 parrillas
 const GRILLS: Grill[] = [
@@ -124,6 +145,13 @@ const INITIAL_RESERVATIONS: Reservation[] = [
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [owners, setOwners] = useState<Owner[]>(REGISTERED_OWNERS);
+  const [pendingDepartment, setPendingDepartment] = useState<{
+    tower: string;
+    floor: number;
+    apartment: number;
+    departmentCode: string;
+  } | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>(INITIAL_RESERVATIONS);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<{
@@ -131,11 +159,50 @@ export default function App() {
     grill: Grill;
   } | null>(null);
 
-  const handleLogin = (userData: User) => {
-    setCurrentUser(userData);
-    toast.success("¡Bienvenido!", {
-      description: `Departamento ${userData.departmentCode}`,
+  const findOwner = (departmentCode: string): Owner | undefined => {
+    return owners.find((owner) => owner.departmentCode === departmentCode);
+  };
+
+  const handleLogin = (userData: { tower: string; floor: number; apartment: number; departmentCode: string }) => {
+    const existingOwner = findOwner(userData.departmentCode);
+
+    if (existingOwner) {
+      // Propietario existe, permitir login
+      setCurrentUser({
+        ...userData,
+        owner: existingOwner,
+      });
+      toast.success(`¡Bienvenido, ${existingOwner.firstName}!`, {
+        description: `Departamento ${userData.departmentCode}`,
+      });
+    } else {
+      // No hay propietario, mostrar formulario de registro
+      setPendingDepartment(userData);
+    }
+  };
+
+  const handleOwnerRegistration = (owner: Owner) => {
+    if (!pendingDepartment) return;
+
+    const newOwner: Owner = {
+      ...owner,
+      id: `owner-${Date.now()}`,
+    };
+
+    setOwners([...owners, newOwner]);
+    setCurrentUser({
+      ...pendingDepartment,
+      owner: newOwner,
     });
+    setPendingDepartment(null);
+
+    toast.success(`¡Bienvenido, ${newOwner.firstName}!`, {
+      description: `Registro exitoso para el departamento ${newOwner.departmentCode}`,
+    });
+  };
+
+  const handleBackToLogin = () => {
+    setPendingDepartment(null);
   };
 
   const handleLogout = () => {
@@ -175,6 +242,18 @@ export default function App() {
     });
   };
 
+  // Mostrar formulario de registro si hay un departamento pendiente
+  if (pendingDepartment) {
+    return (
+      <OwnerRegistrationView
+        departmentCode={pendingDepartment.departmentCode}
+        onRegister={handleOwnerRegistration}
+        onBack={handleBackToLogin}
+      />
+    );
+  }
+
+  // Mostrar login si no hay usuario
   if (!currentUser) {
     return <LoginView onLogin={handleLogin} />;
   }
@@ -194,7 +273,10 @@ export default function App() {
               <div>
                 <h1 className="font-semibold">Sistema de Reservas de Parrillas</h1>
                 <p className="text-sm text-muted-foreground">
-                  Departamento: <span className="font-semibold text-indigo-600">{currentUser.departmentCode}</span>
+                  {currentUser.owner && (
+                    <span className="font-medium">{currentUser.owner.firstName} {currentUser.owner.lastName} - </span>
+                  )}
+                  Depto: <span className="font-semibold text-indigo-600">{currentUser.departmentCode}</span>
                 </p>
               </div>
             </div>

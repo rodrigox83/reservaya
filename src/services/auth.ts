@@ -1,5 +1,5 @@
 import api from '../api';
-import type { User } from '../app/types';
+import type { User, Owner } from '../app/types';
 
 export interface LoginRequest {
   tower: string;
@@ -10,6 +10,15 @@ export interface LoginRequest {
 export interface LoginResponse {
   user: User;
   token: string;
+  needsRegistration: boolean;
+}
+
+export interface RegisterOwnerRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  departmentCode: string;
 }
 
 export const authService = {
@@ -20,4 +29,8 @@ export const authService = {
   me: () => api.get<User>('/auth/me'),
 
   refreshToken: () => api.post<{ token: string }>('/auth/refresh'),
+
+  registerOwner: (data: RegisterOwnerRequest) => api.post<Owner>('/auth/register-owner', data),
+
+  getOwner: (departmentCode: string) => api.get<Owner | null>(`/auth/owner/${departmentCode}`),
 };
