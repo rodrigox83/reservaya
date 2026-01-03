@@ -98,6 +98,39 @@ class ApiService {
     return this.request<any>('/auth/me');
   }
 
+  // Staff auth (admin/receptionist)
+  async staffLogin(username: string, password: string) {
+    const result = await this.request<{
+      staff: {
+        id: string;
+        username: string;
+        firstName: string;
+        lastName: string;
+        role: 'ADMIN' | 'RECEPTIONIST';
+      };
+      token: string;
+    }>('/auth/staff/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (result.data?.token) {
+      this.setToken(result.data.token);
+    }
+
+    return result;
+  }
+
+  async staffMe() {
+    return this.request<{
+      id: string;
+      username: string;
+      firstName: string;
+      lastName: string;
+      role: 'ADMIN' | 'RECEPTIONIST';
+    }>('/auth/staff/me');
+  }
+
   logout() {
     this.setToken(null);
   }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LoginView } from "./components/LoginView";
+import { LoginView, StaffRole } from "./components/LoginView";
 import { OwnerRegistrationView } from "./components/OwnerRegistrationView";
 import { GrillsCalendarView } from "./components/GrillsCalendarView";
 import { RequestDialog } from "./components/RequestDialog";
@@ -9,15 +9,24 @@ import { PoolAccessView } from "./components/pool";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
 import { Badge } from "./components/ui/badge";
-import { LogOut, Building, Calendar, List, Shield, Waves, Loader2 } from "lucide-react";
+import { LogOut, Building, Calendar, List, Shield, Waves, Loader2, User as UserIcon } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { Grill, Reservation, User, Owner, PoolGuest, PoolAccess, PoolStats } from "./types";
 import { api } from "./services/api";
 
+interface Staff {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  role: StaffRole;
+}
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
   const [pendingDepartment, setPendingDepartment] = useState<{
     tower: string;
     floor: number;
@@ -50,6 +59,15 @@ export default function App() {
     const checkSession = async () => {
       const token = api.getToken();
       if (token) {
+        // Primero intentar como staff
+        const staffResult = await api.staffMe();
+        if (staffResult.data) {
+          setCurrentStaff(staffResult.data);
+          setLoading(false);
+          return;
+        }
+
+        // Si no es staff, intentar como usuario normal
         const result = await api.me();
         if (result.data) {
           setCurrentUser({
@@ -69,12 +87,12 @@ export default function App() {
     checkSession();
   }, []);
 
-  // Cargar datos cuando el usuario está logueado
+  // Cargar datos cuando el usuario o staff está logueado
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser || currentStaff) {
       loadData();
     }
-  }, [currentUser]);
+  }, [currentUser, currentStaff]);
 
   const loadData = async () => {
     // Cargar parrillas
@@ -214,6 +232,14 @@ export default function App() {
     }
   };
 
+  const handleStaffLogin = (staffData: Staff) => {
+    setCurrentStaff(staffData);
+    const roleLabel = staffData.role === 'ADMIN' ? 'Administrador' : 'Recepcionista';
+    toast.success(`Bienvenido, ${staffData.firstName}!`, {
+      description: `Acceso como ${roleLabel}`,
+    });
+  };
+
   const handleOwnerRegistration = async (owner: Owner) => {
     if (!pendingDepartment) return;
 
@@ -263,6 +289,7 @@ export default function App() {
   const handleLogout = () => {
     api.logout();
     setCurrentUser(null);
+    setCurrentStaff(null);
     setGrills([]);
     setReservations([]);
     setPoolGuests([]);
@@ -437,7 +464,9 @@ export default function App() {
   };
 
   const activePoolAccesses = poolAccesses.filter(a => a.status === 'active');
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const isStaff = !!currentStaff;
+  const isAdmin = currentStaff?.role === 'ADMIN';
+  const isReceptionist = currentStaff?.role === 'RECEPTIONIST';
 
   // Mostrar loading inicial
   if (loading) {
@@ -462,9 +491,9 @@ export default function App() {
     );
   }
 
-  // Mostrar login si no hay usuario
-  if (!currentUser) {
-    return <LoginView onLogin={handleLogin} />;
+  // Mostrar login si no hay usuario ni staff
+  if (!currentUser && !currentStaff) {
+    return <LoginView onLogin={handleLogin} onStaffLogin={handleStaffLogin} />;
   }
 
   return (
@@ -476,24 +505,40 @@ export default function App() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <Building className="w-6 h-6 text-indigo-600" />
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isStaff ? 'bg-amber-100' : 'bg-indigo-100'}`}>
+                {isStaff ? (
+                  <Shield className={`w-6 h-6 ${isAdmin ? 'text-amber-600' : 'text-blue-600'}`} />
+                ) : (
+                  <Building className="w-6 h-6 text-indigo-600" />
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-semibold">Sistema de Reservas de Parrillas</h1>
+                  <h1 className="font-semibold">Sistema de Reservas</h1>
                   {isAdmin && (
-                    <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-700">
                       <Shield className="h-3 w-3 mr-1" />
                       Admin
                     </Badge>
                   )}
+                  {isReceptionist && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                      <UserIcon className="h-3 w-3 mr-1" />
+                      Recepcionista
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {currentUser.owner && (
-                    <span className="font-medium">{currentUser.owner.firstName} {currentUser.owner.lastName} - </span>
+                  {isStaff ? (
+                    <span className="font-medium">{currentStaff?.firstName} {currentStaff?.lastName}</span>
+                  ) : (
+                    <>
+                      {currentUser?.owner && (
+                        <span className="font-medium">{currentUser.owner.firstName} {currentUser.owner.lastName} - </span>
+                      )}
+                      Depto: <span className="font-semibold text-indigo-600">{currentUser?.departmentCode}</span>
+                    </>
                   )}
-                  Depto: <span className="font-semibold text-indigo-600">{currentUser.departmentCode}</span>
                 </p>
               </div>
             </div>
@@ -507,9 +552,9 @@ export default function App() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue={isAdmin ? "admin" : "calendar"} className="space-y-6">
-          <TabsList className={`grid w-full max-w-2xl ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
-            {isAdmin && (
+        <Tabs defaultValue={isStaff ? "admin" : "calendar"} className="space-y-6">
+          <TabsList className={`grid w-full max-w-2xl ${isStaff ? 'grid-cols-4' : 'grid-cols-3'}`}>
+            {isStaff && (
               <TabsTrigger value="admin" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
                 <span className="hidden sm:inline">Administración</span>
@@ -526,14 +571,16 @@ export default function App() {
               <span className="hidden sm:inline">Piscina</span>
               <span className="sm:hidden">Piscina</span>
             </TabsTrigger>
-            <TabsTrigger value="requests" className="flex items-center gap-2">
-              <List className="h-4 w-4" />
-              <span className="hidden sm:inline">Mis Solicitudes</span>
-              <span className="sm:hidden">Solicitudes</span>
-            </TabsTrigger>
+            {!isStaff && (
+              <TabsTrigger value="requests" className="flex items-center gap-2">
+                <List className="h-4 w-4" />
+                <span className="hidden sm:inline">Mis Solicitudes</span>
+                <span className="sm:hidden">Solicitudes</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
-          {isAdmin && (
+          {isStaff && (
             <TabsContent value="admin">
               <AdminView
                 useMockData={false}
@@ -541,6 +588,7 @@ export default function App() {
                 mockOwners={[]}
                 onApproveReservation={handleApproveReservation}
                 onRejectReservation={handleRejectReservation}
+                staffRole={currentStaff?.role}
               />
             </TabsContent>
           )}

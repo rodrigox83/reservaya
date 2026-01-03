@@ -4,13 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Building, Home, Shield, ArrowLeft } from "lucide-react";
+import { Building, Home, Shield, ArrowLeft, Loader2 } from "lucide-react";
+import api from "../services/api";
+
+export type StaffRole = 'ADMIN' | 'RECEPTIONIST';
 
 interface LoginViewProps {
   onLogin: (userData: { tower: string; floor: number; apartment: number; departmentCode: string; dni?: string; role?: 'USER' | 'ADMIN' }) => void;
+  onStaffLogin?: (staffData: { id: string; username: string; firstName: string; lastName: string; role: StaffRole }) => void;
 }
 
-export function LoginView({ onLogin }: LoginViewProps) {
+export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
   const [loginMode, setLoginMode] = useState<'select' | 'owner' | 'admin'>('select');
   const [tower, setTower] = useState("");
   const [floor, setFloor] = useState("");
@@ -19,6 +23,7 @@ export function LoginView({ onLogin }: LoginViewProps) {
   const [adminUser, setAdminUser] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [adminError, setAdminError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const getDepartmentCode = () => {
     if (!floor || !apartment || !tower) return "";
@@ -39,21 +44,35 @@ export function LoginView({ onLogin }: LoginViewProps) {
     }
   };
 
-  const handleAdminSubmit = (e: React.FormEvent) => {
+  const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminError("");
+    setIsLoading(true);
 
-    // Credenciales de admin hardcodeadas (en producción usar backend)
-    if (adminUser === "admin" && adminPassword === "reservaya2024") {
-      onLogin({
-        tower: "A",
-        floor: 1,
-        apartment: 1,
-        departmentCode: "ADMIN",
-        role: 'ADMIN',
-      });
-    } else {
-      setAdminError("Usuario o contraseña incorrectos");
+    try {
+      const result = await api.staffLogin(adminUser, adminPassword);
+
+      if (result.error) {
+        setAdminError(result.error);
+        return;
+      }
+
+      if (result.data?.staff && onStaffLogin) {
+        onStaffLogin(result.data.staff);
+      } else {
+        // Fallback para compatibilidad
+        onLogin({
+          tower: "A",
+          floor: 1,
+          apartment: 1,
+          departmentCode: "ADMIN",
+          role: 'ADMIN',
+        });
+      }
+    } catch {
+      setAdminError("Error de conexión con el servidor");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -156,9 +175,13 @@ export function LoginView({ onLogin }: LoginViewProps) {
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={!isAdminValid}>
-                <Shield className="mr-2 h-4 w-4" />
-                Ingresar como Admin
+              <Button type="submit" className="w-full" disabled={!isAdminValid || isLoading}>
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Shield className="mr-2 h-4 w-4" />
+                )}
+                {isLoading ? "Ingresando..." : "Ingresar"}
               </Button>
             </form>
           </CardContent>
