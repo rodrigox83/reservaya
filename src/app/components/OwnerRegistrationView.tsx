@@ -15,6 +15,7 @@ interface OwnerRegistrationViewProps {
 export function OwnerRegistrationView({ departmentCode, onRegister, onBack }: OwnerRegistrationViewProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [dni, setDni] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -28,6 +29,12 @@ export function OwnerRegistrationView({ departmentCode, onRegister, onBack }: Ow
 
     if (!lastName.trim()) {
       newErrors.lastName = "El apellido es requerido";
+    }
+
+    if (!dni.trim()) {
+      newErrors.dni = "El DNI es requerido";
+    } else if (!/^\d{8,}$/.test(dni.replace(/\s/g, ""))) {
+      newErrors.dni = "El DNI debe tener al menos 8 dígitos";
     }
 
     if (!email.trim()) {
@@ -53,6 +60,7 @@ export function OwnerRegistrationView({ departmentCode, onRegister, onBack }: Ow
       onRegister({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
+        dni: dni.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
         departmentCode,
@@ -60,7 +68,7 @@ export function OwnerRegistrationView({ departmentCode, onRegister, onBack }: Ow
     }
   };
 
-  const isValid = firstName && lastName && email && phone;
+  const isValid = firstName.trim() && lastName.trim() && dni.trim() && email.trim() && phone.trim();
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -102,6 +110,20 @@ export function OwnerRegistrationView({ departmentCode, onRegister, onBack }: Ow
               />
               {errors.lastName && (
                 <p className="text-sm text-red-500">{errors.lastName}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dni">DNI</Label>
+              <Input
+                id="dni"
+                type="text"
+                placeholder="12345678"
+                value={dni}
+                onChange={(e) => setDni(e.target.value)}
+              />
+              {errors.dni && (
+                <p className="text-sm text-red-500">{errors.dni}</p>
               )}
             </div>
 
