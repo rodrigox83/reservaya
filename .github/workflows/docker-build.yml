@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Frontend Docker Image
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ env:
 
 jobs:
   build-and-push:
-    if: github.event.label.name == 'deploy-build-docker'
+    if: github.event.label.name == 'deploy-build-frontend'
     runs-on: ubuntu-latest
     permissions:
       contents: read

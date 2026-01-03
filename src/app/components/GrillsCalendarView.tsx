@@ -160,7 +160,7 @@ export function GrillsCalendarView({
                   <h4 className="text-sm font-semibold text-gray-600">Torre A - Parrillas cerca de la piscina</h4>
                   <div className="h-px bg-gray-300 flex-1"></div>
                 </div>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {grills
                     .filter((g) => g.tower === "A")
                     .map((grill) => {
@@ -175,8 +175,8 @@ export function GrillsCalendarView({
                           className={`overflow-hidden border-2 ${getStatusColor(status)}`}
                         >
                           <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 space-y-2">
+                            <div className="flex flex-col gap-3">
+                              <div className="space-y-2">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <Flame className="h-5 w-5 text-orange-600" />
                                   <h4 className="font-semibold">{grill.name}</h4>
@@ -217,6 +217,7 @@ export function GrillsCalendarView({
                                 }
                                 disabled={status !== "available"}
                                 size="sm"
+                                className="w-full"
                                 variant={status === "available" ? "default" : "outline"}
                               >
                                 {status === "available" ? "Solicitar" : "No disponible"}
@@ -236,7 +237,7 @@ export function GrillsCalendarView({
                   <h4 className="text-sm font-semibold text-gray-600">Torre B - Área de parrillas</h4>
                   <div className="h-px bg-gray-300 flex-1"></div>
                 </div>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {grills
                     .filter((g) => g.tower === "B")
                     .map((grill) => {
@@ -251,8 +252,8 @@ export function GrillsCalendarView({
                           className={`overflow-hidden border-2 ${getStatusColor(status)}`}
                         >
                           <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 space-y-2">
+                            <div className="flex flex-col gap-3">
+                              <div className="space-y-2">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <Flame className="h-5 w-5 text-orange-600" />
                                   <h4 className="font-semibold">{grill.name}</h4>
@@ -293,6 +294,7 @@ export function GrillsCalendarView({
                                 }
                                 disabled={status !== "available"}
                                 size="sm"
+                                className="w-full"
                                 variant={status === "available" ? "default" : "outline"}
                               >
                                 {status === "available" ? "Solicitar" : "No disponible"}
