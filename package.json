@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "build:local": "cp .env.local .env.production && vite build",
+    "build:azure": "cp .env.azure .env.production && vite build",
     "dev": "vite"
   },
   "dependencies": {
