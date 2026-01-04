@@ -61,6 +61,22 @@ export interface DashboardStats {
   approvedReservations: number;
   rejectedReservations: number;
   totalGrills: number;
+  totalGuests: number;
+  todayPoolAccesses: number;
+  activePoolAccesses: number;
+}
+
+export interface Guest {
+  id: string;
+  firstName: string;
+  lastName: string;
+  documentType: 'DNI' | 'PASSPORT' | 'CE' | 'OTHER';
+  documentNumber: string;
+  email: string | null;
+  phone: string | null;
+  departmentCode: string;
+  guestType: 'AIRBNB' | 'FRIEND' | 'TENANT';
+  createdAt: string;
 }
 
 // Tipos para el módulo de piscina

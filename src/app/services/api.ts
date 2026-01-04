@@ -243,6 +243,17 @@ class ApiService {
     return this.request<any>('/pool/stats');
   }
 
+  // Admin - Guests management
+  async getAdminGuests() {
+    return this.request<any[]>('/admin/guests');
+  }
+
+  async deleteAdminGuest(id: string) {
+    return this.request<any>(`/admin/guests/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Guests (Invitados/Huéspedes)
   async checkGuest(documentType: string, documentNumber: string) {
     return this.request<{

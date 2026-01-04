@@ -11,7 +11,7 @@ import { Grill, Reservation, User } from "../types";
 interface GrillsCalendarViewProps {
   grills: Grill[];
   reservations: Reservation[];
-  currentUser: User;
+  currentUser: User | null;
   onRequestReservation: (date: Date, grill: Grill) => void;
 }
 

@@ -1,8 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { LayoutDashboard, Clock, Users } from "lucide-react";
+import { LayoutDashboard, Clock, Users, UserPlus } from "lucide-react";
 import { AdminDashboard } from "./AdminDashboard";
 import { PendingReservations } from "./PendingReservations";
 import { OwnersDirectory } from "./OwnersDirectory";
+import { GuestsDirectory } from "./GuestsDirectory";
 import type { Reservation, Owner } from "../../types";
 
 type StaffRole = 'ADMIN' | 'RECEPTIONIST';
@@ -28,7 +29,7 @@ export function AdminView({
 
   return (
     <Tabs defaultValue="dashboard" className="space-y-6">
-      <TabsList className={`grid w-full max-w-lg ${isAdmin ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <TabsList className={`grid w-full max-w-2xl ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
         <TabsTrigger value="dashboard" className="flex items-center gap-2">
           <LayoutDashboard className="h-4 w-4" />
           <span className="hidden sm:inline">Dashboard</span>
@@ -42,6 +43,10 @@ export function AdminView({
         <TabsTrigger value="owners" className="flex items-center gap-2">
           <Users className="h-4 w-4" />
           <span className="hidden sm:inline">Propietarios</span>
+        </TabsTrigger>
+        <TabsTrigger value="guests" className="flex items-center gap-2">
+          <UserPlus className="h-4 w-4" />
+          <span className="hidden sm:inline">Huéspedes</span>
         </TabsTrigger>
       </TabsList>
 
@@ -62,6 +67,10 @@ export function AdminView({
 
       <TabsContent value="owners">
         <OwnersDirectory useMockData={useMockData} mockOwners={mockOwners} />
+      </TabsContent>
+
+      <TabsContent value="guests">
+        <GuestsDirectory useMockData={useMockData} />
       </TabsContent>
     </Tabs>
   );
