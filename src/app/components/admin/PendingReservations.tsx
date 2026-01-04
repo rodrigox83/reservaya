@@ -129,7 +129,7 @@ export function PendingReservations({
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-lg">{reservation.grillName}</CardTitle>
+                    <CardTitle className="text-lg">{reservation.grill?.name || reservation.grillName}</CardTitle>
                     <CardDescription className="flex items-center gap-1 mt-1">
                       <Calendar className="h-3 w-3" />
                       {format(new Date(reservation.date), "EEEE d 'de' MMMM, yyyy", { locale: es })}
@@ -145,13 +145,21 @@ export function PendingReservations({
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <User className="h-4 w-4" />
-                    <span>Depto: <strong className="text-foreground">{reservation.departmentCode}</strong></span>
+                    <span>Depto: <strong className="text-foreground">{reservation.user?.owner?.departmentCode || reservation.departmentCode}</strong></span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4" />
-                    <span>{reservation.grillName?.includes("Torre") ? reservation.grillName.split("-")[1]?.trim() : "Torre"}</span>
+                    <span>Torre {reservation.grill?.tower || reservation.user?.tower}</span>
                   </div>
                 </div>
+
+                {reservation.user?.owner && (
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm text-muted-foreground">
+                      <strong>Propietario:</strong> {reservation.user.owner.firstName} {reservation.user.owner.lastName}
+                    </p>
+                  </div>
+                )}
 
                 {reservation.notes && (
                   <div className="bg-muted/50 rounded-lg p-3">
@@ -162,7 +170,7 @@ export function PendingReservations({
                 )}
 
                 <div className="text-xs text-muted-foreground">
-                  Solicitado: {format(new Date(reservation.requestedAt), "d MMM yyyy, HH:mm", { locale: es })}
+                  Solicitado: {format(new Date(reservation.createdAt || reservation.requestedAt || reservation.date), "d MMM yyyy, HH:mm", { locale: es })}
                 </div>
 
                 <div className="flex gap-2 pt-2">

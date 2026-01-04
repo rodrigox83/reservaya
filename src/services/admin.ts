@@ -17,6 +17,25 @@ export const adminService = {
       headers: getAuthHeaders(),
     }),
 
+  updateOwner: (id: string, data: Partial<Omit<Owner, 'id' | 'departmentCode'>>) =>
+    api.patch<Owner>(`/admin/owners/${id}`, data, {
+      headers: getAuthHeaders(),
+    }),
+
+  createOwner: (data: {
+    firstName: string;
+    lastName: string;
+    dni: string;
+    email: string;
+    phone: string;
+    tower: string;
+    floor: string;
+    apartment: string;
+  }) =>
+    api.post<Owner>('/admin/owners', data, {
+      headers: getAuthHeaders(),
+    }),
+
   getPendingReservations: () =>
     api.get<Reservation[]>('/admin/reservations/pending', {
       headers: getAuthHeaders(),

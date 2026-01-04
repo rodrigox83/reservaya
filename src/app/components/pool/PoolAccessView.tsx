@@ -5,7 +5,7 @@ import { PoolOccupancy } from "./PoolOccupancy";
 import type { PoolGuest, PoolAccess, PoolStats, User } from "../../types";
 
 interface PoolAccessViewProps {
-  currentUser: User;
+  currentUser: User | null;
   guests: PoolGuest[];
   activeAccesses: PoolAccess[];
   poolStats: PoolStats;
@@ -13,6 +13,7 @@ interface PoolAccessViewProps {
   onRemoveGuest: (guestId: string) => void;
   onRegisterAccess: (access: Omit<PoolAccess, 'id' | 'entryTime' | 'expectedExitTime' | 'status'>) => void;
   onMarkExit: (accessId: string) => void;
+  isStaffMode?: boolean;
 }
 
 export function PoolAccessView({
@@ -23,9 +24,35 @@ export function PoolAccessView({
   onAddGuest,
   onRemoveGuest,
   onRegisterAccess,
-  onMarkExit
+  onMarkExit,
+  isStaffMode = false
 }: PoolAccessViewProps) {
-  const isAdmin = currentUser.role === 'ADMIN';
+  const isAdmin = isStaffMode || currentUser?.role === 'ADMIN';
+
+  // Si es staff, mostrar solo vista de ocupación/aforo
+  if (isStaffMode || !currentUser) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Waves className="h-6 w-6 text-blue-600" />
+            Control de Piscina
+          </h2>
+          <p className="text-muted-foreground">
+            Gestiona el aforo y registra salidas
+          </p>
+        </div>
+
+        <PoolOccupancy
+          poolStats={poolStats}
+          activeAccesses={activeAccesses}
+          onMarkExit={onMarkExit}
+          currentUserDepartment="STAFF"
+          isAdmin={true}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

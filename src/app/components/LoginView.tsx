@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Building, Home, Shield, ArrowLeft, Loader2, UserPlus } from "lucide-react";
+import { Building, Home, Shield, ArrowLeft, Loader2, UserPlus, Users } from "lucide-react";
 import api from "../services/api";
 
 export type StaffRole = 'ADMIN' | 'RECEPTIONIST';
@@ -14,7 +14,7 @@ interface LoginViewProps {
   onStaffLogin?: (staffData: { id: string; username: string; firstName: string; lastName: string; role: StaffRole }) => void;
 }
 
-type LoginMode = 'select' | 'owner-department' | 'owner-dni' | 'owner-register' | 'admin';
+type LoginMode = 'select' | 'owner-department' | 'owner-dni' | 'owner-register' | 'admin' | 'guest-department' | 'guest-register' | 'guest-success';
 
 interface OwnerData {
   id: string;
@@ -45,6 +45,17 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
   const [adminPassword, setAdminPassword] = useState("");
   const [adminError, setAdminError] = useState("");
 
+  // Guest registration
+  const [guestDocumentType, setGuestDocumentType] = useState("DNI");
+  const [guestDocumentNumber, setGuestDocumentNumber] = useState("");
+  const [guestFirstName, setGuestFirstName] = useState("");
+  const [guestLastName, setGuestLastName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [guestType, setGuestType] = useState("AIRBNB");
+  const [guestExists, setGuestExists] = useState<any>(null);
+  const [registeredGuest, setRegisteredGuest] = useState<any>(null);
+
   // Loading and error states
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -64,6 +75,22 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
     setEmail("");
     setPhone("");
     setOwnerExists(null);
+    setError("");
+  };
+
+  const resetGuestForm = () => {
+    setTower("");
+    setFloor("");
+    setApartment("");
+    setGuestDocumentType("DNI");
+    setGuestDocumentNumber("");
+    setGuestFirstName("");
+    setGuestLastName("");
+    setGuestEmail("");
+    setGuestPhone("");
+    setGuestType("AIRBNB");
+    setGuestExists(null);
+    setRegisteredGuest(null);
     setError("");
   };
 
@@ -183,6 +210,71 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
     }
   };
 
+  const handleGuestDepartmentCheck = async () => {
+    if (!tower || !floor || !apartment) return;
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const departmentCode = getDepartmentCode();
+      const result = await api.getOwner(departmentCode);
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      if (result.data) {
+        // Department has owner - can proceed to guest registration directly
+        setLoginMode('guest-register');
+      } else {
+        // No owner - cannot register guests
+        setError("Este departamento no tiene propietario registrado. No es posible registrar invitados.");
+      }
+    } catch {
+      setError("Error al verificar el departamento");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGuestRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestFirstName || !guestLastName || !guestDocumentNumber) return;
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const departmentCode = getDepartmentCode();
+      const result = await api.registerGuest({
+        firstName: guestFirstName,
+        lastName: guestLastName,
+        documentType: guestDocumentType,
+        documentNumber: guestDocumentNumber,
+        email: guestEmail || undefined,
+        phone: guestPhone || undefined,
+        departmentCode,
+        guestType,
+      });
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      if (result.data) {
+        setRegisteredGuest(result.data.guest);
+        setLoginMode('guest-success');
+      }
+    } catch {
+      setError("Error al registrar invitado");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdminError("");
@@ -219,6 +311,7 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
   const isDniValid = dni.length >= 8;
   const isRegistrationValid = firstName && lastName && dni.length >= 8 && email && phone.length >= 9;
   const isAdminValid = adminUser && adminPassword;
+  const isGuestRegistrationValid = guestFirstName && guestLastName && guestDocumentNumber.length >= 6;
   const departmentCode = getDepartmentCode();
 
   // Vista de selección de tipo de login
@@ -245,9 +338,17 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
               Soy Propietario
             </Button>
             <Button
-              onClick={() => setLoginMode('admin')}
+              onClick={() => setLoginMode('guest-department')}
               className="w-full h-16 text-lg"
               variant="outline"
+            >
+              <Users className="mr-3 h-6 w-6" />
+              Invitado / Huésped
+            </Button>
+            <Button
+              onClick={() => setLoginMode('admin')}
+              className="w-full h-16 text-lg"
+              variant="ghost"
             >
               <Shield className="mr-3 h-6 w-6" />
               Personal / Administrador
@@ -625,6 +726,307 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
                 {isLoading ? "Registrando..." : "Registrarme e Ingresar"}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Vista de selección de departamento para invitados
+  if (loginMode === 'guest-department') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute left-4 top-4"
+              onClick={() => {
+                setLoginMode('select');
+                resetGuestForm();
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Volver
+            </Button>
+            <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+              <Users className="w-8 h-8 text-purple-600" />
+            </div>
+            <CardTitle>Registro de Invitado</CardTitle>
+            <CardDescription>
+              Selecciona el departamento al que te diriges
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="guestTower">Torre</Label>
+                <Select value={tower} onValueChange={setTower}>
+                  <SelectTrigger id="guestTower">
+                    <SelectValue placeholder="Selecciona la torre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A">Torre A</SelectItem>
+                    <SelectItem value="B">Torre B</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="guestFloor">Piso</Label>
+                <Select value={floor} onValueChange={setFloor}>
+                  <SelectTrigger id="guestFloor">
+                    <SelectValue placeholder="Selecciona el piso" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 16 }, (_, i) => i + 1).map((num) => (
+                      <SelectItem key={num} value={num.toString()}>
+                        Piso {num}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="guestApartment">Departamento</Label>
+                <Select value={apartment} onValueChange={setApartment}>
+                  <SelectTrigger id="guestApartment">
+                    <SelectValue placeholder="Selecciona el departamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
+                      <SelectItem key={num} value={num.toString()}>
+                        Depto {num}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {departmentCode && (
+                <div className="bg-purple-50 p-3 rounded-md text-center">
+                  <p className="text-sm text-purple-600">Departamento destino</p>
+                  <p className="text-2xl font-bold text-purple-900">{departmentCode}</p>
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm text-center">
+                  {error}
+                </div>
+              )}
+
+              <Button
+                onClick={handleGuestDepartmentCheck}
+                className="w-full"
+                disabled={!isDepartmentSelected || isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Users className="mr-2 h-4 w-4" />
+                )}
+                {isLoading ? "Verificando..." : "Continuar"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Vista de registro de invitado
+  if (loginMode === 'guest-register') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute left-4 top-4"
+              onClick={() => {
+                setLoginMode('guest-department');
+                setGuestDocumentType("DNI");
+                setGuestDocumentNumber("");
+                setGuestFirstName("");
+                setGuestLastName("");
+                setGuestEmail("");
+                setGuestPhone("");
+                setGuestExists(null);
+                setError("");
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Volver
+            </Button>
+            <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+              <UserPlus className="w-8 h-8 text-purple-600" />
+            </div>
+            <CardTitle>Registro de Invitado</CardTitle>
+            <CardDescription>
+              Departamento destino: {departmentCode}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleGuestRegister} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="guestFirstName">Nombre *</Label>
+                  <Input
+                    id="guestFirstName"
+                    type="text"
+                    placeholder="Tu nombre"
+                    value={guestFirstName}
+                    onChange={(e) => setGuestFirstName(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="guestLastName">Apellido *</Label>
+                  <Input
+                    id="guestLastName"
+                    type="text"
+                    placeholder="Tu apellido"
+                    value={guestLastName}
+                    onChange={(e) => setGuestLastName(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="guestDocType">Tipo de Documento *</Label>
+                  <Select value={guestDocumentType} onValueChange={setGuestDocumentType}>
+                    <SelectTrigger id="guestDocType">
+                      <SelectValue placeholder="Selecciona tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DNI">DNI</SelectItem>
+                      <SelectItem value="PASSPORT">Pasaporte</SelectItem>
+                      <SelectItem value="CE">Carnet de Extranjería</SelectItem>
+                      <SelectItem value="OTHER">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="guestDocNumber">Número *</Label>
+                  <Input
+                    id="guestDocNumber"
+                    type="text"
+                    placeholder="Número de documento"
+                    value={guestDocumentNumber}
+                    onChange={(e) => setGuestDocumentNumber(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="guestType">Tipo de Visita</Label>
+                <Select value={guestType} onValueChange={setGuestType}>
+                  <SelectTrigger id="guestType">
+                    <SelectValue placeholder="Selecciona tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AIRBNB">Airbnb / Alquiler temporal</SelectItem>
+                    <SelectItem value="FRIEND">Familiar / Amigo</SelectItem>
+                    <SelectItem value="TENANT">Inquilino</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="guestEmail">Email (opcional)</Label>
+                <Input
+                  id="guestEmail"
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="guestPhone">Teléfono (opcional)</Label>
+                <Input
+                  id="guestPhone"
+                  type="tel"
+                  placeholder="999888777"
+                  value={guestPhone}
+                  onChange={(e) => setGuestPhone(e.target.value)}
+                />
+              </div>
+
+              {error && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm text-center">
+                  {error}
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" disabled={!isGuestRegistrationValid || isLoading}>
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <UserPlus className="mr-2 h-4 w-4" />
+                )}
+                {isLoading ? "Registrando..." : "Registrarme"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Vista de registro exitoso de invitado
+  if (loginMode === 'guest-success') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <Users className="w-8 h-8 text-green-600" />
+            </div>
+            <CardTitle>Registro Exitoso</CardTitle>
+            <CardDescription>
+              Te has registrado correctamente
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-green-50 p-4 rounded-md text-center">
+              <p className="text-lg font-semibold text-green-900">
+                {registeredGuest?.firstName} {registeredGuest?.lastName}
+              </p>
+              <p className="text-sm text-green-700">
+                Departamento: {departmentCode}
+              </p>
+              <p className="text-sm text-green-700">
+                {guestDocumentType}: {guestDocumentNumber}
+              </p>
+            </div>
+
+            <div className="bg-blue-50 p-4 rounded-md">
+              <p className="text-sm text-blue-800 text-center">
+                Tu registro ha sido guardado. Ahora puedes acceder a las áreas comunes del edificio.
+              </p>
+            </div>
+
+            <Button
+              onClick={() => {
+                setLoginMode('select');
+                resetGuestForm();
+              }}
+              className="w-full"
+              variant="outline"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Volver al Inicio
+            </Button>
           </CardContent>
         </Card>
       </div>

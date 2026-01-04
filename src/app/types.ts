@@ -10,13 +10,28 @@ export interface Grill {
 export interface Reservation {
   id: string;
   grillId: string;
-  grillName: string;
+  grillName?: string; // For mock data compatibility
   date: string;
-  departmentCode: string; // Format: 603A
+  departmentCode?: string; // For mock data compatibility
   userName?: string;
   notes?: string;
-  status: "available" | "pending" | "approved" | "rejected";
-  requestedAt: string; // ISO timestamp for ordering
+  status: "available" | "pending" | "approved" | "rejected" | "PENDING" | "APPROVED" | "REJECTED";
+  requestedAt?: string; // For mock data compatibility
+  createdAt?: string; // From API
+  // Nested objects from API
+  grill?: {
+    id: string;
+    name: string;
+    tower: string;
+    description?: string;
+  };
+  user?: {
+    id: string;
+    tower: string;
+    floor: string;
+    apartment: string;
+    owner?: Owner;
+  };
 }
 
 export interface Owner {

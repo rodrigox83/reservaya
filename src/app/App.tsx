@@ -612,6 +612,7 @@ export default function App() {
               onRemoveGuest={handleRemoveGuest}
               onRegisterAccess={handleRegisterPoolAccess}
               onMarkExit={handleMarkPoolExit}
+              isStaffMode={isStaff}
             />
           </TabsContent>
 

@@ -23,8 +23,8 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Error de red' }));
-    throw new Error(error.message || `HTTP ${response.status}`);
+    const errorData = await response.json().catch(() => ({ message: 'Error de red' }));
+    throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
   }
 
   return response.json();

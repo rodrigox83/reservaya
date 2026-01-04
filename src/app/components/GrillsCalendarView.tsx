@@ -5,7 +5,7 @@ import { Calendar } from "./ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Flame, Calendar as CalendarIcon, MapPin } from "lucide-react";
+import { Flame, Calendar as CalendarIcon, MapPin, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Grill, Reservation, User } from "../types";
 
 interface GrillsCalendarViewProps {
@@ -98,8 +98,84 @@ export function GrillsCalendarView({
     (r) => isSameDay(new Date(r.date), selectedDate) && r.status !== "rejected"
   );
 
+  // Stats calculation for the selected date
+  const todayStats = (() => {
+    const dateReservations = reservations.filter(
+      (r) => isSameDay(new Date(r.date), selectedDate) && r.status !== "rejected"
+    );
+
+    const pendingCount = dateReservations.filter(r => r.status === "pending").length;
+    const approvedCount = dateReservations.filter(r => r.status === "approved").length;
+    const reservedGrillIds = new Set(dateReservations.map(r => r.grillId));
+    const availableCount = grills.filter(g => !reservedGrillIds.has(g.id)).length;
+
+    return {
+      available: availableCount,
+      pending: pendingCount,
+      approved: approvedCount,
+      total: grills.length
+    };
+  })();
+
   return (
     <div className="space-y-6">
+      {/* Stats Panel */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Parrillas</p>
+                <p className="text-2xl font-bold">{todayStats.total}</p>
+              </div>
+              <Flame className="h-8 w-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Disponibles</p>
+                <p className="text-2xl font-bold text-green-600">{todayStats.available}</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Pendientes</p>
+                <p className="text-2xl font-bold text-yellow-600">{todayStats.pending}</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                <Clock className="h-5 w-5 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Reservadas</p>
+                <p className="text-2xl font-bold text-blue-600">{todayStats.approved}</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <XCircle className="h-5 w-5 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -109,7 +185,8 @@ export function GrillsCalendarView({
                 Calendario de Parrillas
               </CardTitle>
               <CardDescription>
-                8 parrillas disponibles (2 en Torre A, 6 en Torre B)
+                {todayStats.available} de {todayStats.total} parrillas disponibles para{" "}
+                {format(selectedDate, "d 'de' MMMM", { locale: es })}
               </CardDescription>
             </div>
           </div>

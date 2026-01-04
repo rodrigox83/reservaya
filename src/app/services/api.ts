@@ -242,6 +242,44 @@ class ApiService {
   async getPoolStats() {
     return this.request<any>('/pool/stats');
   }
+
+  // Guests (Invitados/Huéspedes)
+  async checkGuest(documentType: string, documentNumber: string) {
+    return this.request<{
+      exists: boolean;
+      guest: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        documentType: string;
+        documentNumber: string;
+        email: string | null;
+        phone: string | null;
+        departmentCode: string;
+        guestType: string;
+      } | null;
+    }>(`/guests/check?documentType=${documentType}&documentNumber=${encodeURIComponent(documentNumber)}`);
+  }
+
+  async registerGuest(data: {
+    firstName: string;
+    lastName: string;
+    documentType: string;
+    documentNumber: string;
+    email?: string;
+    phone?: string;
+    departmentCode: string;
+    guestType: string;
+  }) {
+    return this.request<{
+      message: string;
+      guest: any;
+      isNew: boolean;
+    }>('/guests/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const api = new ApiService();
