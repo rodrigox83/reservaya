@@ -84,7 +84,11 @@ export function GuestPoolAccessForm({
   const [newCompanionType, setNewCompanionType] = useState<GuestType | "">("");
 
   const isFull = poolStats.currentOccupancy >= poolStats.maxCapacity;
-  const myAccess = activeAccesses.find(a => a.personId === currentGuest.id && a.status === 'active');
+  // Buscar acceso activo del huésped actual (comparar case-insensitive)
+  const myAccess = activeAccesses.find(a =>
+    a.personId === currentGuest.id &&
+    a.status.toLowerCase() === 'active'
+  );
   const isInPool = !!myAccess;
   const guestTypeInfo = GUEST_TYPE_INFO[currentGuest.guestType] || GUEST_TYPE_INFO.FRIEND;
   const now = new Date();
@@ -94,7 +98,10 @@ export function GuestPoolAccessForm({
 
   // Verificar si un acompañante está en la piscina
   const isCompanionInPool = (companionId: string) => {
-    return activeAccesses.some(a => a.personId === companionId && a.status === 'active');
+    return activeAccesses.some(a =>
+      a.personId === companionId &&
+      a.status.toLowerCase() === 'active'
+    );
   };
 
   const handleRegisterAccess = (hours: number) => {
@@ -402,7 +409,10 @@ export function GuestPoolAccessForm({
               myCompanions.map((companion) => {
                 const typeInfo = GUEST_TYPE_INFO[companion.guestType.toUpperCase()] || GUEST_TYPE_INFO.FRIEND;
                 const inPool = isCompanionInPool(companion.id);
-                const companionAccess = activeAccesses.find(a => a.personId === companion.id && a.status === 'active');
+                const companionAccess = activeAccesses.find(a =>
+                  a.personId === companion.id &&
+                  a.status.toLowerCase() === 'active'
+                );
 
                 return (
                   <div
