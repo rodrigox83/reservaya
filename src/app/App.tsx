@@ -72,6 +72,7 @@ export default function App() {
         const result = await api.me();
         if (result.data) {
           setCurrentUser({
+            id: result.data.id,
             tower: result.data.tower,
             floor: parseInt(result.data.floor),
             apartment: parseInt(result.data.apartment),
@@ -224,6 +225,7 @@ export default function App() {
     } else if (result.data?.user) {
       // Login exitoso
       setCurrentUser({
+        id: result.data.user.id,
         tower: result.data.user.tower,
         floor: parseInt(result.data.user.floor),
         apartment: parseInt(result.data.user.apartment),
@@ -272,6 +274,7 @@ export default function App() {
 
     if (loginResult.data?.user) {
       setCurrentUser({
+        id: loginResult.data.user.id,
         tower: loginResult.data.user.tower,
         floor: parseInt(loginResult.data.user.floor),
         apartment: parseInt(loginResult.data.user.apartment),

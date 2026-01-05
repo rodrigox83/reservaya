@@ -79,7 +79,7 @@ export function PoolAccessForm({
     return activeAccesses.some(a => a.personId === personId && a.status === 'active');
   };
 
-  const ownerInPool = isPersonInPool(currentUser.owner?.id || currentUser.departmentCode);
+  const ownerInPool = isPersonInPool(currentUser.id || currentUser.departmentCode);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +105,7 @@ export function PoolAccessForm({
       personName = currentUser.owner
         ? `${currentUser.owner.firstName} ${currentUser.owner.lastName}`
         : `Propietario ${currentUser.departmentCode}`;
-      personId = currentUser.owner?.id || currentUser.departmentCode;
+      personId = currentUser.id || currentUser.departmentCode;
     } else {
       const guest = myGuests.find(g => g.id === selectedPerson);
       if (!guest) {
