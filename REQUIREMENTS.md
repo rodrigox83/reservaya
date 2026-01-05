@@ -1,131 +1,84 @@
 # Reservaya - Documentación de Requerimientos
 
-Este documento contiene todos los requerimientos solicitados para el sistema de reservas de parrillas.
+Este documento sirve como índice principal de los requerimientos del sistema de reservas de parrillas y control de acceso a áreas comunes.
 
 ---
 
-## Requerimientos Implementados
+## Documentos de Requerimientos
 
-### 1. Sistema de Autenticación de Propietarios
-- Los propietarios ingresan seleccionando torre, piso y departamento
-- Se genera automáticamente un código de departamento (ej: 101A)
-- Registro de propietarios con nombre, email y teléfono
+Los requerimientos están organizados por tipo de usuario:
 
-### 2. Sistema de Reservas de Parrillas
-- 8 parrillas disponibles (2 en Torre A, 6 en Torre B)
-- Calendario interactivo para selección de fecha
-- Estados de reserva: pendiente, aprobada, rechazada
-- Indicadores visuales de disponibilidad por fecha
+| Documento | Descripción |
+|-----------|-------------|
+| [REQUIREMENTS_PROPIETARIOS.md](REQUIREMENTS_PROPIETARIOS.md) | Funcionalidades para propietarios del condominio |
+| [REQUIREMENTS_HUESPEDES.md](REQUIREMENTS_HUESPEDES.md) | Funcionalidades para huéspedes e invitados |
+| [REQUIREMENTS_ADMIN.md](REQUIREMENTS_ADMIN.md) | Funcionalidades para administración y recepción |
 
-### 3. Panel de Administración
-- Dashboard con estadísticas generales
-- Vista de solicitudes pendientes con acciones aprobar/rechazar
-- Directorio de propietarios registrados con búsqueda
+---
 
-### 4. Despliegue en Azure
-- Backend desplegado en Azure App Service (B1)
-- Frontend desplegado en Azure App Service
-- Base de datos PostgreSQL Flexible Server
-- Imágenes Docker en GitHub Container Registry (GHCR)
+## Resumen del Sistema
 
-### 5. Sistema de Autenticación
+### Usuarios del Sistema
 
-#### 5.1 Autenticación de Propietarios
-**Estado:** Completado
-**Descripción:** Flujo de login para propietarios basado en selección de departamento y verificación de DNI.
+| Tipo de Usuario | Acceso | Documento |
+|-----------------|--------|-----------|
+| Propietario | App móvil/web | [Propietarios](REQUIREMENTS_PROPIETARIOS.md) |
+| Huésped/Invitado | A través del propietario | [Huéspedes](REQUIREMENTS_HUESPEDES.md) |
+| Administrador | Panel de administración | [Admin](REQUIREMENTS_ADMIN.md) |
+| Recepcionista | Panel de administración (limitado) | [Admin](REQUIREMENTS_ADMIN.md) |
 
-**Flujo de ingreso:**
-1. Pantalla inicial con dos opciones: "Soy Propietario" y "Personal/Administrador"
-2. Si selecciona "Soy Propietario":
-   - Primero debe seleccionar: Torre, Piso y Departamento
-   - El sistema verifica si el departamento tiene propietario registrado
-   - **Si el departamento TIENE propietario:** Se solicita el DNI para verificar identidad
-   - **Si el departamento NO tiene propietario:** Se muestra formulario de registro con campos obligatorios:
-     - Nombre y Apellido
-     - DNI (obligatorio)
-     - Email
-     - Teléfono
+### Módulos Principales
 
-#### 5.2 Autenticación de Personal (Admin/Recepcionista)
-**Estado:** Completado
-**Descripción:** El acceso al panel de administración requiere usuario y contraseña.
-- Formulario de login específico para personal con usuario/contraseña
-- Dos roles disponibles:
-  - **ADMIN**: Acceso completo incluyendo aprobación/rechazo de reservas
-  - **RECEPTIONIST**: Acceso sin permisos de aprobación de reservas
-- Credenciales por defecto:
-  - Admin: usuario `admin`, contraseña `reservaya2024`
-  - Recepcionista: usuario `recepcion`, contraseña `recepcion2024`
+1. **Autenticación**
+   - Login de propietarios por departamento + DNI
+   - Login de personal con usuario/contraseña
 
-### 6. Visualización de Parrillas en Dos Columnas
-**Estado:** Completado
-**Descripción:** Las parrillas se muestran en un layout de dos columnas (grid responsive).
-- En móvil: 1 columna
-- En tablet/desktop: 2 columnas
-- Botón de solicitar ahora ocupa todo el ancho de la tarjeta
+2. **Reservas de Parrillas**
+   - 8 parrillas (2 Torre A, 6 Torre B)
+   - Límite de 1 reserva activa por propietario
 
-### 7. Límite de Una Reserva Activa por Usuario
-**Estado:** Completado
-**Descripción:** Cada usuario solo puede tener una reserva activa (pendiente o aprobada con fecha futura) a la vez.
-- Se muestra un mensaje de error al intentar crear una segunda reserva
-- El mensaje indica la reserva activa existente
-- No puede solicitar otra reserva hasta que:
-  - Su reserva actual sea rechazada
-  - La fecha de su reserva aprobada haya pasado
+3. **Control de Piscina**
+   - Aforo máximo: 25 personas
+   - Registro de ingreso/salida
+   - Control en tiempo real
 
-### 8. Módulo de Acceso a Piscina con Control de Aforo
-**Estado:** Completado
-**Descripción:** Sistema completo para gestionar el acceso a la piscina con control de aforo en tiempo real.
+4. **Panel de Administración**
+   - Dashboard con estadísticas
+   - Gestión de reservas
+   - Directorios de propietarios y huéspedes
 
-#### 8.1 Registro de Invitados
-Los propietarios pueden registrar diferentes tipos de invitados:
-- **Residente**: Personas que viven en el departamento junto con el propietario
-- **Amigo/Invitado**: Amigos o conocidos del propietario
-- **Inquilino**: Personas que alquilan el departamento
-- **Huésped Airbnb**: Huéspedes de alquiler temporal
+---
 
-Cada invitado se registra con:
-- Nombre y apellido
-- Número de documento (opcional)
-- Tipo de invitado
-- Asociación al departamento del propietario
+## Arquitectura Técnica
 
-#### 8.2 Registro de Acceso a Piscina
-- El propietario puede registrar su ingreso o el de sus invitados
-- Se indica el tiempo estimado de uso (1-4 horas)
-- El sistema calcula automáticamente la hora esperada de salida
-- Se verifica que la persona no tenga ya un acceso activo
+| Componente | Tecnología |
+|------------|------------|
+| Frontend | React + TypeScript + Vite |
+| Backend | Node.js + Express + Prisma |
+| Base de datos | PostgreSQL |
+| Despliegue | Azure App Service |
+| CI/CD | GitHub Actions |
 
-#### 8.3 Control de Aforo
-- Capacidad máxima configurada: 25 personas
-- Indicador visual del nivel de ocupación (verde, amarillo, rojo)
-- Barra de progreso que muestra el porcentaje de ocupación
-- Bloqueo de nuevos ingresos cuando se alcanza el 100%
-- Estadísticas en tiempo real:
-  - Ocupación actual
-  - Propietarios activos
-  - Invitados activos
-  - Entradas del día
+---
 
-#### 8.4 Panel de Ocupación
-- Lista de todas las personas actualmente en la piscina
-- Indicador de tiempo restante o excedido
-- Botón para registrar salida (propio o de invitados)
-- El admin puede registrar la salida de cualquier persona
+## Estado General
+
+| Módulo | Estado |
+|--------|--------|
+| Autenticación propietarios | Completado |
+| Autenticación personal | Completado |
+| Reservas de parrillas | Completado |
+| Control de piscina | Completado |
+| Panel de administración | Completado |
+| Directorio de huéspedes | Completado |
+| Despliegue Azure | Completado |
 
 ---
 
 ## Historial de Cambios
 
-| Fecha | Requerimiento | Estado |
-|-------|---------------|--------|
-| 2026-01-01 | Sistema de autenticación propietarios | Completado |
-| 2026-01-01 | Sistema de reservas | Completado |
-| 2026-01-01 | Panel de administración | Completado |
-| 2026-01-01 | Despliegue Azure | Completado |
-| 2026-01-01 | Login admin con usuario/contraseña | Completado |
-| 2026-01-01 | Parrillas en dos columnas | Completado |
-| 2026-01-01 | Límite una reserva por usuario | Completado |
-| 2026-01-01 | Módulo de acceso a piscina | Completado |
-| 2026-01-03 | Roles de personal (Admin/Recepcionista) | Completado |
-| 2026-01-03 | Flujo de login propietario mejorado | Completado |
+| Fecha | Cambio |
+|-------|--------|
+| 2026-01-04 | Reorganización en 3 documentos separados |
+| 2026-01-03 | Roles de personal, flujo de login mejorado |
+| 2026-01-01 | Versión inicial del sistema |
