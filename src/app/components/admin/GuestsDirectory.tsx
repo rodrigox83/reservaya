@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -13,7 +13,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { Users, Search, Mail, Phone, Building, Calendar, Trash2, Plane, UserCheck, Key, Loader2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import { Users, Search, Trash2, Plane, UserCheck, Key, Loader2, Home } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
@@ -24,7 +32,7 @@ interface GuestsDirectoryProps {
   useMockData?: boolean;
 }
 
-const GUEST_TYPE_CONFIG = {
+const GUEST_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   AIRBNB: {
     label: "Airbnb",
     icon: <Plane className="h-3 w-3" />,
@@ -40,12 +48,17 @@ const GUEST_TYPE_CONFIG = {
     icon: <Key className="h-3 w-3" />,
     color: "bg-purple-100 text-purple-700 border-purple-200",
   },
+  RESIDENT: {
+    label: "Residente",
+    icon: <Home className="h-3 w-3" />,
+    color: "bg-blue-100 text-blue-700 border-blue-200",
+  },
 };
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   DNI: "DNI",
   PASSPORT: "Pasaporte",
-  CE: "Carnet Extranjería",
+  CE: "C. Extranjería",
   OTHER: "Otro",
 };
 
@@ -68,7 +81,13 @@ export function GuestsDirectory({ useMockData = true }: GuestsDirectoryProps) {
       try {
         const result = await api.getAdminGuests();
         if (result.data) {
-          setGuests(result.data);
+          // Ordenar por fecha de registro (más recientes primero)
+          const sortedGuests = result.data.sort((a: Guest, b: Guest) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          });
+          setGuests(sortedGuests);
         }
       } catch (error) {
         console.error("Error fetching guests:", error);
@@ -170,81 +189,69 @@ export function GuestsDirectory({ useMockData = true }: GuestsDirectoryProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {filteredGuests.map((guest) => {
-            const guestTypeConfig = GUEST_TYPE_CONFIG[guest.guestType] || GUEST_TYPE_CONFIG.AIRBNB;
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[140px]">Fecha Registro</TableHead>
+                    <TableHead className="w-[100px]">Depto.</TableHead>
+                    <TableHead className="w-[100px]">Tipo Doc.</TableHead>
+                    <TableHead className="w-[120px]">Documento</TableHead>
+                    <TableHead>Nombres</TableHead>
+                    <TableHead>Apellidos</TableHead>
+                    <TableHead className="w-[130px]">Tipo</TableHead>
+                    <TableHead className="w-[60px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredGuests.map((guest) => {
+                    const guestTypeConfig = GUEST_TYPE_CONFIG[guest.guestType] || GUEST_TYPE_CONFIG.AIRBNB;
 
-            return (
-              <Card key={guest.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">
-                        {guest.firstName} {guest.lastName}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-1 mt-1">
-                        <Building className="h-3 w-3" />
-                        Departamento {guest.departmentCode}
-                      </CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={guestTypeConfig.color}>
-                        {guestTypeConfig.icon}
-                        <span className="ml-1">{guestTypeConfig.label}</span>
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleDeleteClick(guest)}
-                        title="Eliminar invitado"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <span className="font-medium">{DOCUMENT_TYPE_LABELS[guest.documentType]}:</span>
-                      <span>{guest.documentNumber}</span>
-                    </div>
-                    {guest.email && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Mail className="h-4 w-4" />
-                        <a
-                          href={`mailto:${guest.email}`}
-                          className="text-indigo-600 hover:underline"
-                        >
-                          {guest.email}
-                        </a>
-                      </div>
-                    )}
-                    {guest.phone && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Phone className="h-4 w-4" />
-                        <a
-                          href={`tel:${guest.phone}`}
-                          className="text-indigo-600 hover:underline"
-                        >
-                          {guest.phone}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-
-                  {guest.createdAt && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
-                      <Calendar className="h-3 w-3" />
-                      Registrado: {format(new Date(guest.createdAt), "d MMM yyyy, HH:mm", { locale: es })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                    return (
+                      <TableRow key={guest.id}>
+                        <TableCell className="text-sm">
+                          {guest.createdAt
+                            ? format(new Date(guest.createdAt), "dd/MM/yyyy HH:mm", { locale: es })
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {guest.departmentCode}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {DOCUMENT_TYPE_LABELS[guest.documentType] || guest.documentType}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {guest.documentNumber}
+                        </TableCell>
+                        <TableCell>{guest.firstName}</TableCell>
+                        <TableCell>{guest.lastName}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`${guestTypeConfig.color} text-xs`}>
+                            {guestTypeConfig.icon}
+                            <span className="ml-1">{guestTypeConfig.label}</span>
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick(guest)}
+                            title="Eliminar invitado"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <div className="text-center text-sm text-muted-foreground">
