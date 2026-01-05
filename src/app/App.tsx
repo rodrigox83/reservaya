@@ -4,12 +4,12 @@ import { OwnerRegistrationView } from "./components/OwnerRegistrationView";
 import { GrillsCalendarView } from "./components/GrillsCalendarView";
 import { RequestDialog } from "./components/RequestDialog";
 import { MyRequests } from "./components/MyRequests";
-import { AdminView } from "./components/admin";
+import { AdminView, AdminDashboard } from "./components/admin";
 import { PoolAccessView } from "./components/pool";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Button } from "./components/ui/button";
 import { Badge } from "./components/ui/badge";
-import { LogOut, Building, Calendar, List, Shield, Waves, Loader2, User as UserIcon } from "lucide-react";
+import { LogOut, Building, Calendar, List, Shield, Waves, Loader2, User as UserIcon, LayoutDashboard } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { Grill, Reservation, User, Owner, PoolGuest, PoolAccess, PoolStats } from "./types";
@@ -614,9 +614,16 @@ export default function App() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue={isGuest ? "pool" : (isStaff ? "admin" : "calendar")} className="space-y-6">
+        <Tabs defaultValue={isGuest ? "pool" : (isStaff ? "dashboard" : "calendar")} className="space-y-6">
           {!isGuest && (
-            <TabsList className={`grid w-full max-w-2xl ${isStaff ? 'grid-cols-4' : 'grid-cols-3'}`}>
+            <TabsList className={`grid w-full max-w-2xl ${isStaff ? 'grid-cols-5' : 'grid-cols-3'}`}>
+              {isStaff && (
+                <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                  <span className="sm:hidden">Dash</span>
+                </TabsTrigger>
+              )}
               {isStaff && (
                 <TabsTrigger value="admin" className="flex items-center gap-2">
                   <Shield className="h-4 w-4" />
@@ -642,6 +649,12 @@ export default function App() {
                 </TabsTrigger>
               )}
             </TabsList>
+          )}
+
+          {isStaff && (
+            <TabsContent value="dashboard">
+              <AdminDashboard useMockData={false} />
+            </TabsContent>
           )}
 
           {isStaff && (

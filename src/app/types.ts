@@ -64,6 +64,7 @@ export interface DashboardStats {
   totalGuests: number;
   todayPoolAccesses: number;
   activePoolAccesses: number;
+  maxPoolCapacity: number;
 }
 
 export interface Guest {

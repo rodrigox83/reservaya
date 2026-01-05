@@ -1,10 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { LayoutDashboard, Clock, Users, UserPlus, Settings } from "lucide-react";
-import { AdminDashboard } from "./AdminDashboard";
-import { PendingReservations } from "./PendingReservations";
+import { Users, UserPlus } from "lucide-react";
 import { OwnersDirectory } from "./OwnersDirectory";
 import { GuestsDirectory } from "./GuestsDirectory";
-import { PoolConfigSettings } from "./PoolConfigSettings";
 import type { Reservation, Owner } from "../../types";
 
 type StaffRole = 'ADMIN' | 'RECEPTIONIST';
@@ -20,27 +17,11 @@ interface AdminViewProps {
 
 export function AdminView({
   useMockData = true,
-  mockReservations = [],
   mockOwners = [],
-  onApproveReservation,
-  onRejectReservation,
-  staffRole = 'ADMIN',
 }: AdminViewProps) {
-  const isAdmin = staffRole === 'ADMIN';
-
   return (
-    <Tabs defaultValue="dashboard" className="space-y-6">
-      <TabsList className={`grid w-full max-w-3xl ${isAdmin ? 'grid-cols-5' : 'grid-cols-3'}`}>
-        <TabsTrigger value="dashboard" className="flex items-center gap-2">
-          <LayoutDashboard className="h-4 w-4" />
-          <span className="hidden sm:inline">Dashboard</span>
-        </TabsTrigger>
-        {isAdmin && (
-          <TabsTrigger value="pending" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Pendientes</span>
-          </TabsTrigger>
-        )}
+    <Tabs defaultValue="owners" className="space-y-6">
+      <TabsList className="grid w-full max-w-md grid-cols-2">
         <TabsTrigger value="owners" className="flex items-center gap-2">
           <Users className="h-4 w-4" />
           <span className="hidden sm:inline">Propietarios</span>
@@ -49,28 +30,7 @@ export function AdminView({
           <UserPlus className="h-4 w-4" />
           <span className="hidden sm:inline">Huéspedes</span>
         </TabsTrigger>
-        {isAdmin && (
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Configuración</span>
-          </TabsTrigger>
-        )}
       </TabsList>
-
-      <TabsContent value="dashboard">
-        <AdminDashboard useMockData={useMockData} />
-      </TabsContent>
-
-      {isAdmin && (
-        <TabsContent value="pending">
-          <PendingReservations
-            useMockData={useMockData}
-            mockReservations={mockReservations}
-            onApprove={onApproveReservation}
-            onReject={onRejectReservation}
-          />
-        </TabsContent>
-      )}
 
       <TabsContent value="owners">
         <OwnersDirectory useMockData={useMockData} mockOwners={mockOwners} />
@@ -79,12 +39,6 @@ export function AdminView({
       <TabsContent value="guests">
         <GuestsDirectory useMockData={useMockData} />
       </TabsContent>
-
-      {isAdmin && (
-        <TabsContent value="settings">
-          <PoolConfigSettings useMockData={useMockData} />
-        </TabsContent>
-      )}
     </Tabs>
   );
 }

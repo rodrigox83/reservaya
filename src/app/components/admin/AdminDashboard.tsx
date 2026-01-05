@@ -42,6 +42,7 @@ export function AdminDashboard({ useMockData = true }: AdminDashboardProps) {
     totalGuests: 0,
     todayPoolAccesses: 0,
     activePoolAccesses: 0,
+    maxPoolCapacity: 10,
   });
   const [loading, setLoading] = useState(true);
 
@@ -59,6 +60,7 @@ export function AdminDashboard({ useMockData = true }: AdminDashboardProps) {
           totalGuests: 5,
           todayPoolAccesses: 3,
           activePoolAccesses: 1,
+          maxPoolCapacity: 10,
         });
         setLoading(false);
         return;
@@ -153,7 +155,7 @@ export function AdminDashboard({ useMockData = true }: AdminDashboardProps) {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-2xl font-bold">{stats.activePoolAccesses}/25</div>
+                  <div className="text-2xl font-bold">{stats.activePoolAccesses}/{stats.maxPoolCapacity}</div>
                   <p className="text-xs text-muted-foreground">Ocupación actual</p>
                 </div>
                 <div className="w-16 h-16">
@@ -167,9 +169,9 @@ export function AdminDashboard({ useMockData = true }: AdminDashboardProps) {
                     <path
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       fill="none"
-                      stroke={stats.activePoolAccesses / 25 > 0.9 ? "#ef4444" : stats.activePoolAccesses / 25 > 0.7 ? "#eab308" : "#22c55e"}
+                      stroke={stats.activePoolAccesses / stats.maxPoolCapacity > 0.9 ? "#ef4444" : stats.activePoolAccesses / stats.maxPoolCapacity > 0.7 ? "#eab308" : "#22c55e"}
                       strokeWidth="3"
-                      strokeDasharray={`${(stats.activePoolAccesses / 25) * 100}, 100`}
+                      strokeDasharray={`${(stats.activePoolAccesses / stats.maxPoolCapacity) * 100}, 100`}
                       strokeLinecap="round"
                     />
                   </svg>
