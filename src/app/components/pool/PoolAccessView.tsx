@@ -87,8 +87,10 @@ export function PoolAccessView({
           currentGuest={currentGuest}
           poolStats={poolStats}
           activeAccesses={activeAccesses}
+          companions={guests}
           maxHoursPerVisit={maxHoursPerVisit}
           onRegisterAccess={onRegisterAccess}
+          onAddCompanion={onAddGuest}
         />
       </div>
     );
