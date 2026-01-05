@@ -9,12 +9,23 @@ import api from "../services/api";
 
 export type StaffRole = 'ADMIN' | 'RECEPTIONIST';
 
+interface GuestData {
+  id: string;
+  firstName: string;
+  lastName: string;
+  documentType: string;
+  documentNumber: string;
+  departmentCode: string;
+  guestType: string;
+}
+
 interface LoginViewProps {
   onLogin: (userData: { tower: string; floor: number; apartment: number; departmentCode: string; dni?: string; role?: 'USER' | 'ADMIN' }) => void;
   onStaffLogin?: (staffData: { id: string; username: string; firstName: string; lastName: string; role: StaffRole }) => void;
+  onGuestLogin?: (guestData: GuestData) => void;
 }
 
-type LoginMode = 'select' | 'owner-department' | 'owner-dni' | 'owner-register' | 'admin' | 'guest-department' | 'guest-register' | 'guest-success';
+type LoginMode = 'select' | 'owner-department' | 'owner-dni' | 'owner-register' | 'admin' | 'guest-department' | 'guest-verify' | 'guest-register' | 'guest-success';
 
 interface OwnerData {
   id: string;
@@ -26,7 +37,7 @@ interface OwnerData {
   departmentCode: string;
 }
 
-export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
+export function LoginView({ onLogin, onStaffLogin, onGuestLogin }: LoginViewProps) {
   const [loginMode, setLoginMode] = useState<LoginMode>('select');
   const [tower, setTower] = useState("");
   const [floor, setFloor] = useState("");
@@ -226,14 +237,52 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
       }
 
       if (result.data) {
-        // Department has owner - can proceed to guest registration directly
-        setLoginMode('guest-register');
+        // Department has owner - proceed to guest verification
+        setLoginMode('guest-verify');
       } else {
         // No owner - cannot register guests
         setError("Este departamento no tiene propietario registrado. No es posible registrar invitados.");
       }
     } catch {
       setError("Error al verificar el departamento");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGuestVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestDocumentNumber) return;
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const departmentCode = getDepartmentCode();
+      const result = await api.guestLogin(departmentCode, guestDocumentType, guestDocumentNumber);
+
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      if (result.data?.needsRegistration) {
+        // Guest doesn't exist - show registration form
+        setLoginMode('guest-register');
+      } else if (result.data?.guest && onGuestLogin) {
+        // Guest exists - log them in and give pool access
+        onGuestLogin({
+          id: result.data.guest.id,
+          firstName: result.data.guest.firstName,
+          lastName: result.data.guest.lastName,
+          documentType: result.data.guest.documentType,
+          documentNumber: result.data.guest.documentNumber,
+          departmentCode: result.data.guest.departmentCode,
+          guestType: result.data.guest.guestType,
+        });
+      }
+    } catch {
+      setError("Error al verificar el invitado");
     } finally {
       setIsLoading(false);
     }
@@ -264,9 +313,25 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
         return;
       }
 
-      if (result.data) {
-        setRegisteredGuest(result.data.guest);
-        setLoginMode('guest-success');
+      if (result.data?.guest) {
+        // After registration, log them in automatically
+        const loginResult = await api.guestLogin(departmentCode, guestDocumentType, guestDocumentNumber);
+
+        if (loginResult.data?.guest && onGuestLogin) {
+          onGuestLogin({
+            id: loginResult.data.guest.id,
+            firstName: loginResult.data.guest.firstName,
+            lastName: loginResult.data.guest.lastName,
+            documentType: loginResult.data.guest.documentType,
+            documentNumber: loginResult.data.guest.documentNumber,
+            departmentCode: loginResult.data.guest.departmentCode,
+            guestType: loginResult.data.guest.guestType,
+          });
+        } else {
+          // Fallback: show success screen
+          setRegisteredGuest(result.data.guest);
+          setLoginMode('guest-success');
+        }
       }
     } catch {
       setError("Error al registrar invitado");
@@ -837,8 +902,9 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
     );
   }
 
-  // Vista de registro de invitado
-  if (loginMode === 'guest-register') {
+  // Vista de verificación de invitado (si ya existe)
+  if (loginMode === 'guest-verify') {
+    const isDocumentValid = guestDocumentNumber.length >= 6;
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
         <Card className="w-full max-w-md">
@@ -851,6 +917,98 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
                 setLoginMode('guest-department');
                 setGuestDocumentType("DNI");
                 setGuestDocumentNumber("");
+                setError("");
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Volver
+            </Button>
+            <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+              <Users className="w-8 h-8 text-purple-600" />
+            </div>
+            <CardTitle>Verificación de Identidad</CardTitle>
+            <CardDescription>
+              Departamento destino: {departmentCode}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleGuestVerify} className="space-y-4">
+              <div className="bg-purple-50 p-3 rounded-md text-center mb-2">
+                <p className="text-sm text-purple-700">
+                  Ingresa tu documento para verificar si ya estás registrado
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="verifyDocType">Tipo de Documento</Label>
+                <Select value={guestDocumentType} onValueChange={setGuestDocumentType}>
+                  <SelectTrigger id="verifyDocType">
+                    <SelectValue placeholder="Selecciona tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DNI">DNI</SelectItem>
+                    <SelectItem value="PASSPORT">Pasaporte</SelectItem>
+                    <SelectItem value="CE">Carnet de Extranjería</SelectItem>
+                    <SelectItem value="OTHER">Otro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="verifyDocNumber">Número de Documento</Label>
+                <Input
+                  id="verifyDocNumber"
+                  type="text"
+                  placeholder="Ingresa tu número de documento"
+                  value={guestDocumentNumber}
+                  onChange={(e) => setGuestDocumentNumber(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              {error && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm text-center">
+                  {error}
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" disabled={!isDocumentValid || isLoading}>
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Users className="mr-2 h-4 w-4" />
+                )}
+                {isLoading ? "Verificando..." : "Verificar e Ingresar"}
+              </Button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  className="text-sm text-purple-600 hover:underline"
+                  onClick={() => setLoginMode('guest-register')}
+                >
+                  No tengo registro, quiero registrarme
+                </button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Vista de registro de invitado
+  if (loginMode === 'guest-register') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute left-4 top-4"
+              onClick={() => {
+                setLoginMode('guest-verify');
                 setGuestFirstName("");
                 setGuestLastName("");
                 setGuestEmail("");
@@ -865,13 +1023,19 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
             <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
               <UserPlus className="w-8 h-8 text-purple-600" />
             </div>
-            <CardTitle>Registro de Invitado</CardTitle>
+            <CardTitle>Nuevo Registro de Invitado</CardTitle>
             <CardDescription>
               Departamento destino: {departmentCode}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleGuestRegister} className="space-y-4">
+              <div className="bg-amber-50 p-3 rounded-md text-center mb-2">
+                <p className="text-sm text-amber-700">
+                  No encontramos tu registro. Por favor completa tus datos.
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="guestFirstName">Nombre *</Label>
@@ -900,8 +1064,8 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="guestDocType">Tipo de Documento *</Label>
-                  <Select value={guestDocumentType} onValueChange={setGuestDocumentType}>
+                  <Label htmlFor="guestDocType">Tipo de Documento</Label>
+                  <Select value={guestDocumentType} onValueChange={setGuestDocumentType} disabled>
                     <SelectTrigger id="guestDocType">
                       <SelectValue placeholder="Selecciona tipo" />
                     </SelectTrigger>
@@ -914,14 +1078,13 @@ export function LoginView({ onLogin, onStaffLogin }: LoginViewProps) {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="guestDocNumber">Número *</Label>
+                  <Label htmlFor="guestDocNumber">Número</Label>
                   <Input
                     id="guestDocNumber"
                     type="text"
                     placeholder="Número de documento"
                     value={guestDocumentNumber}
-                    onChange={(e) => setGuestDocumentNumber(e.target.value)}
-                    required
+                    disabled
                   />
                 </div>
               </div>

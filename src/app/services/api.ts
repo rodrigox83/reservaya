@@ -131,6 +131,71 @@ class ApiService {
     }>('/auth/staff/me');
   }
 
+  // Guest auth (airbnb, tenant, etc.)
+  async guestLogin(departmentCode: string, documentType: string, documentNumber: string) {
+    const result = await this.request<{
+      needsRegistration: boolean;
+      guest?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        documentType: string;
+        documentNumber: string;
+        email: string | null;
+        phone: string | null;
+        departmentCode: string;
+        guestType: string;
+      };
+      token?: string;
+      departmentCode?: string;
+      documentType?: string;
+      documentNumber?: string;
+    }>('/auth/guest/login', {
+      method: 'POST',
+      body: JSON.stringify({ departmentCode, documentType, documentNumber }),
+    });
+
+    if (result.data?.token) {
+      this.setToken(result.data.token);
+    }
+
+    return result;
+  }
+
+  async guestMe() {
+    return this.request<{
+      id: string;
+      firstName: string;
+      lastName: string;
+      documentType: string;
+      documentNumber: string;
+      email: string | null;
+      phone: string | null;
+      departmentCode: string;
+      guestType: string;
+    }>('/auth/guest/me');
+  }
+
+  async registerGuest(data: {
+    firstName: string;
+    lastName: string;
+    documentType: string;
+    documentNumber: string;
+    email?: string;
+    phone?: string;
+    departmentCode: string;
+    guestType: string;
+  }) {
+    return this.request<{
+      message: string;
+      guest: any;
+      isNew: boolean;
+    }>('/guests/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   logout() {
     this.setToken(null);
   }
@@ -304,25 +369,6 @@ class ApiService {
     }>(`/guests/check?documentType=${documentType}&documentNumber=${encodeURIComponent(documentNumber)}`);
   }
 
-  async registerGuest(data: {
-    firstName: string;
-    lastName: string;
-    documentType: string;
-    documentNumber: string;
-    email?: string;
-    phone?: string;
-    departmentCode: string;
-    guestType: string;
-  }) {
-    return this.request<{
-      message: string;
-      guest: any;
-      isNew: boolean;
-    }>('/guests/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
 }
 
 export const api = new ApiService();

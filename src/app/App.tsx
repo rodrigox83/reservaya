@@ -23,10 +23,21 @@ interface Staff {
   role: StaffRole;
 }
 
+interface GuestSession {
+  id: string;
+  firstName: string;
+  lastName: string;
+  documentType: string;
+  documentNumber: string;
+  departmentCode: string;
+  guestType: string;
+}
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
+  const [currentGuest, setCurrentGuest] = useState<GuestSession | null>(null);
   const [pendingDepartment, setPendingDepartment] = useState<{
     tower: string;
     floor: number;
@@ -68,7 +79,23 @@ export default function App() {
           return;
         }
 
-        // Si no es staff, intentar como usuario normal
+        // Intentar como guest
+        const guestResult = await api.guestMe();
+        if (guestResult.data) {
+          setCurrentGuest({
+            id: guestResult.data.id,
+            firstName: guestResult.data.firstName,
+            lastName: guestResult.data.lastName,
+            documentType: guestResult.data.documentType,
+            documentNumber: guestResult.data.documentNumber,
+            departmentCode: guestResult.data.departmentCode,
+            guestType: guestResult.data.guestType,
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Si no es staff ni guest, intentar como usuario normal
         const result = await api.me();
         if (result.data) {
           setCurrentUser({
@@ -89,12 +116,12 @@ export default function App() {
     checkSession();
   }, []);
 
-  // Cargar datos cuando el usuario o staff está logueado
+  // Cargar datos cuando el usuario, staff o guest está logueado
   useEffect(() => {
-    if (currentUser || currentStaff) {
+    if (currentUser || currentStaff || currentGuest) {
       loadData();
     }
-  }, [currentUser, currentStaff]);
+  }, [currentUser, currentStaff, currentGuest]);
 
   const loadData = async () => {
     // Cargar parrillas
@@ -247,6 +274,15 @@ export default function App() {
     });
   };
 
+  const handleGuestLogin = (guestData: GuestSession) => {
+    setCurrentGuest(guestData);
+    const guestTypeLabel = guestData.guestType === 'AIRBNB' ? 'Huésped Airbnb' :
+                           guestData.guestType === 'TENANT' ? 'Inquilino' : 'Invitado';
+    toast.success(`Bienvenido, ${guestData.firstName}!`, {
+      description: `${guestTypeLabel} - Depto ${guestData.departmentCode}`,
+    });
+  };
+
   const handleOwnerRegistration = async (owner: Owner) => {
     if (!pendingDepartment) return;
 
@@ -298,6 +334,7 @@ export default function App() {
     api.logout();
     setCurrentUser(null);
     setCurrentStaff(null);
+    setCurrentGuest(null);
     setGrills([]);
     setReservations([]);
     setPoolGuests([]);
@@ -475,6 +512,7 @@ export default function App() {
   const isStaff = !!currentStaff;
   const isAdmin = currentStaff?.role === 'ADMIN';
   const isReceptionist = currentStaff?.role === 'RECEPTIONIST';
+  const isGuest = !!currentGuest;
 
   // Mostrar loading inicial
   if (loading) {
@@ -499,9 +537,9 @@ export default function App() {
     );
   }
 
-  // Mostrar login si no hay usuario ni staff
-  if (!currentUser && !currentStaff) {
-    return <LoginView onLogin={handleLogin} onStaffLogin={handleStaffLogin} />;
+  // Mostrar login si no hay usuario, staff ni guest
+  if (!currentUser && !currentStaff && !currentGuest) {
+    return <LoginView onLogin={handleLogin} onStaffLogin={handleStaffLogin} onGuestLogin={handleGuestLogin} />;
   }
 
   return (
@@ -513,16 +551,20 @@ export default function App() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isStaff ? 'bg-amber-100' : 'bg-indigo-100'}`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                isStaff ? 'bg-amber-100' : isGuest ? 'bg-purple-100' : 'bg-indigo-100'
+              }`}>
                 {isStaff ? (
                   <Shield className={`w-6 h-6 ${isAdmin ? 'text-amber-600' : 'text-blue-600'}`} />
+                ) : isGuest ? (
+                  <Waves className="w-6 h-6 text-purple-600" />
                 ) : (
                   <Building className="w-6 h-6 text-indigo-600" />
                 )}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-semibold">Sistema de Reservas</h1>
+                  <h1 className="font-semibold">{isGuest ? 'Acceso Piscina' : 'Sistema de Reservas'}</h1>
                   {isAdmin && (
                     <Badge variant="secondary" className="bg-amber-100 text-amber-700">
                       <Shield className="h-3 w-3 mr-1" />
@@ -535,10 +577,22 @@ export default function App() {
                       Recepcionista
                     </Badge>
                   )}
+                  {isGuest && (
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                      <Waves className="h-3 w-3 mr-1" />
+                      {currentGuest?.guestType === 'AIRBNB' ? 'Airbnb' :
+                       currentGuest?.guestType === 'TENANT' ? 'Inquilino' : 'Invitado'}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {isStaff ? (
                     <span className="font-medium">{currentStaff?.firstName} {currentStaff?.lastName}</span>
+                  ) : isGuest ? (
+                    <>
+                      <span className="font-medium">{currentGuest?.firstName} {currentGuest?.lastName}</span>
+                      {' - '}Depto: <span className="font-semibold text-purple-600">{currentGuest?.departmentCode}</span>
+                    </>
                   ) : (
                     <>
                       {currentUser?.owner && (
@@ -560,33 +614,35 @@ export default function App() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue={isStaff ? "admin" : "calendar"} className="space-y-6">
-          <TabsList className={`grid w-full max-w-2xl ${isStaff ? 'grid-cols-4' : 'grid-cols-3'}`}>
-            {isStaff && (
-              <TabsTrigger value="admin" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Administración</span>
-                <span className="sm:hidden">Admin</span>
+        <Tabs defaultValue={isGuest ? "pool" : (isStaff ? "admin" : "calendar")} className="space-y-6">
+          {!isGuest && (
+            <TabsList className={`grid w-full max-w-2xl ${isStaff ? 'grid-cols-4' : 'grid-cols-3'}`}>
+              {isStaff && (
+                <TabsTrigger value="admin" className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">Administración</span>
+                  <span className="sm:hidden">Admin</span>
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="calendar" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">Parrillas</span>
+                <span className="sm:hidden">Parrillas</span>
               </TabsTrigger>
-            )}
-            <TabsTrigger value="calendar" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Parrillas</span>
-              <span className="sm:hidden">Parrillas</span>
-            </TabsTrigger>
-            <TabsTrigger value="pool" className="flex items-center gap-2">
-              <Waves className="h-4 w-4" />
-              <span className="hidden sm:inline">Piscina</span>
-              <span className="sm:hidden">Piscina</span>
-            </TabsTrigger>
-            {!isStaff && (
-              <TabsTrigger value="requests" className="flex items-center gap-2">
-                <List className="h-4 w-4" />
-                <span className="hidden sm:inline">Mis Solicitudes</span>
-                <span className="sm:hidden">Solicitudes</span>
+              <TabsTrigger value="pool" className="flex items-center gap-2">
+                <Waves className="h-4 w-4" />
+                <span className="hidden sm:inline">Piscina</span>
+                <span className="sm:hidden">Piscina</span>
               </TabsTrigger>
-            )}
-          </TabsList>
+              {!isStaff && (
+                <TabsTrigger value="requests" className="flex items-center gap-2">
+                  <List className="h-4 w-4" />
+                  <span className="hidden sm:inline">Mis Solicitudes</span>
+                  <span className="sm:hidden">Solicitudes</span>
+                </TabsTrigger>
+              )}
+            </TabsList>
+          )}
 
           {isStaff && (
             <TabsContent value="admin">
@@ -613,6 +669,7 @@ export default function App() {
           <TabsContent value="pool">
             <PoolAccessView
               currentUser={currentUser}
+              currentGuest={currentGuest}
               guests={poolGuests}
               activeAccesses={activePoolAccesses}
               poolStats={poolStats}

@@ -1,11 +1,23 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Waves, Users } from "lucide-react";
 import { PoolAccessForm } from "./PoolAccessForm";
+import { GuestPoolAccessForm } from "./GuestPoolAccessForm";
 import { PoolOccupancy } from "./PoolOccupancy";
 import type { PoolGuest, PoolAccess, PoolStats, User } from "../../types";
 
+interface GuestSession {
+  id: string;
+  firstName: string;
+  lastName: string;
+  documentType: string;
+  documentNumber: string;
+  departmentCode: string;
+  guestType: string;
+}
+
 interface PoolAccessViewProps {
   currentUser: User | null;
+  currentGuest?: GuestSession | null;
   guests: PoolGuest[];
   activeAccesses: PoolAccess[];
   poolStats: PoolStats;
@@ -19,6 +31,7 @@ interface PoolAccessViewProps {
 
 export function PoolAccessView({
   currentUser,
+  currentGuest,
   guests,
   activeAccesses,
   poolStats,
@@ -32,7 +45,7 @@ export function PoolAccessView({
   const isAdmin = isStaffMode || currentUser?.role === 'ADMIN';
 
   // Si es staff, mostrar solo vista de ocupación/aforo
-  if (isStaffMode || !currentUser) {
+  if (isStaffMode) {
     return (
       <div className="space-y-6">
         <div>
@@ -52,6 +65,48 @@ export function PoolAccessView({
           currentUserDepartment="STAFF"
           isAdmin={true}
         />
+      </div>
+    );
+  }
+
+  // Si es guest (huésped), mostrar formulario simplificado solo para ellos
+  if (currentGuest) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Waves className="h-6 w-6 text-blue-600" />
+            Acceso a Piscina
+          </h2>
+          <p className="text-muted-foreground">
+            Registra tu ingreso a la piscina
+          </p>
+        </div>
+
+        <GuestPoolAccessForm
+          currentGuest={currentGuest}
+          poolStats={poolStats}
+          activeAccesses={activeAccesses}
+          maxHoursPerVisit={maxHoursPerVisit}
+          onRegisterAccess={onRegisterAccess}
+        />
+      </div>
+    );
+  }
+
+  // Si no hay usuario ni guest, mostrar mensaje
+  if (!currentUser) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Waves className="h-6 w-6 text-blue-600" />
+            Acceso a Piscina
+          </h2>
+          <p className="text-muted-foreground">
+            Inicia sesión para acceder
+          </p>
+        </div>
       </div>
     );
   }
