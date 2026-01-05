@@ -22,6 +22,7 @@ interface PoolAccessFormProps {
   guests: PoolGuest[];
   poolStats: PoolStats;
   activeAccesses: PoolAccess[];
+  maxHoursPerVisit?: number;
   onRegisterAccess: (access: Omit<PoolAccess, 'id' | 'entryTime' | 'expectedExitTime' | 'status'>) => void;
   onAddGuest: (guest: Omit<PoolGuest, 'id' | 'createdAt'>) => void;
   onRemoveGuest: (guestId: string) => void;
@@ -55,6 +56,7 @@ export function PoolAccessForm({
   guests,
   poolStats,
   activeAccesses,
+  maxHoursPerVisit = 2,
   onRegisterAccess,
   onAddGuest,
   onRemoveGuest
@@ -348,30 +350,14 @@ export function PoolAccessForm({
                   <SelectValue placeholder="¿Cuántas horas?" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      1 hora
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      2 horas
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="3">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      3 horas
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="4">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      4 horas
-                    </div>
-                  </SelectItem>
+                  {Array.from({ length: maxHoursPerVisit }, (_, i) => i + 1).map((hour) => (
+                    <SelectItem key={hour} value={hour.toString()}>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        {hour} {hour === 1 ? 'hora' : 'horas'}
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

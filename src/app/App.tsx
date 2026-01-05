@@ -47,6 +47,7 @@ export default function App() {
     activeOwners: 0,
     activeGuests: 0,
   });
+  const [maxHoursPerVisit, setMaxHoursPerVisit] = useState(2);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<{
@@ -175,6 +176,10 @@ export default function App() {
         activeOwners: statsResult.data.owners,
         activeGuests: statsResult.data.guests,
       });
+      // Actualizar maxHoursPerVisit si viene en la respuesta
+      if (statsResult.data.maxHoursPerVisit) {
+        setMaxHoursPerVisit(statsResult.data.maxHoursPerVisit);
+      }
     }
   };
 
@@ -608,6 +613,7 @@ export default function App() {
               guests={poolGuests}
               activeAccesses={activePoolAccesses}
               poolStats={poolStats}
+              maxHoursPerVisit={maxHoursPerVisit}
               onAddGuest={handleAddGuest}
               onRemoveGuest={handleRemoveGuest}
               onRegisterAccess={handleRegisterPoolAccess}

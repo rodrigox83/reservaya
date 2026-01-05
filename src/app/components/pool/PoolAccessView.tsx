@@ -9,6 +9,7 @@ interface PoolAccessViewProps {
   guests: PoolGuest[];
   activeAccesses: PoolAccess[];
   poolStats: PoolStats;
+  maxHoursPerVisit?: number;
   onAddGuest: (guest: Omit<PoolGuest, 'id' | 'createdAt'>) => void;
   onRemoveGuest: (guestId: string) => void;
   onRegisterAccess: (access: Omit<PoolAccess, 'id' | 'entryTime' | 'expectedExitTime' | 'status'>) => void;
@@ -21,6 +22,7 @@ export function PoolAccessView({
   guests,
   activeAccesses,
   poolStats,
+  maxHoursPerVisit = 2,
   onAddGuest,
   onRemoveGuest,
   onRegisterAccess,
@@ -84,6 +86,7 @@ export function PoolAccessView({
             guests={guests}
             poolStats={poolStats}
             activeAccesses={activeAccesses}
+            maxHoursPerVisit={maxHoursPerVisit}
             onRegisterAccess={onRegisterAccess}
             onAddGuest={onAddGuest}
             onRemoveGuest={onRemoveGuest}
