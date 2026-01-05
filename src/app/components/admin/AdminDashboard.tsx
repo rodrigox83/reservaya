@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
-import { Users, CalendarCheck, Clock, XCircle, CheckCircle, Flame, Waves, UserPlus, Activity } from "lucide-react";
+import { Users, CalendarCheck, Waves, UserPlus, Activity } from "lucide-react";
 import type { DashboardStats } from "../../types";
 import { adminService } from "../../../services";
 
@@ -121,41 +121,6 @@ export function AdminDashboard({ useMockData = true }: AdminDashboardProps) {
             icon={<Activity className="h-4 w-4 text-cyan-600" />}
             color="bg-cyan-100"
             subtitle="Accesos activos ahora"
-          />
-        </div>
-      </div>
-
-      {/* Sección de Parrillas */}
-      <div>
-        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-          <Flame className="h-5 w-5 text-orange-600" />
-          Parrillas
-        </h3>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Total Parrillas"
-            value={stats.totalGrills}
-            icon={<Flame className="h-4 w-4 text-orange-600" />}
-            color="bg-orange-100"
-          />
-          <StatCard
-            title="Pendientes"
-            value={stats.pendingReservations}
-            icon={<Clock className="h-4 w-4 text-yellow-600" />}
-            color="bg-yellow-100"
-            subtitle="Requieren aprobación"
-          />
-          <StatCard
-            title="Aprobadas"
-            value={stats.approvedReservations}
-            icon={<CheckCircle className="h-4 w-4 text-green-600" />}
-            color="bg-green-100"
-          />
-          <StatCard
-            title="Rechazadas"
-            value={stats.rejectedReservations}
-            icon={<XCircle className="h-4 w-4 text-red-600" />}
-            color="bg-red-100"
           />
         </div>
       </div>
