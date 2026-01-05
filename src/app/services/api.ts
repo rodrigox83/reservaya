@@ -254,6 +254,38 @@ class ApiService {
     });
   }
 
+  // Pool Configuration
+  async getPoolConfig() {
+    return this.request<{
+      id: string;
+      maxCapacity: number;
+      maxHoursPerVisit: number;
+      openingTime: string;
+      closingTime: string;
+      isActive: boolean;
+    }>('/admin/pool-config');
+  }
+
+  async updatePoolConfig(data: {
+    maxCapacity?: number;
+    maxHoursPerVisit?: number;
+    openingTime?: string;
+    closingTime?: string;
+    isActive?: boolean;
+  }) {
+    return this.request<{
+      id: string;
+      maxCapacity: number;
+      maxHoursPerVisit: number;
+      openingTime: string;
+      closingTime: string;
+      isActive: boolean;
+    }>('/admin/pool-config', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Guests (Invitados/Huéspedes)
   async checkGuest(documentType: string, documentNumber: string) {
     return this.request<{

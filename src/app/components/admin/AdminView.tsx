@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { LayoutDashboard, Clock, Users, UserPlus } from "lucide-react";
+import { LayoutDashboard, Clock, Users, UserPlus, Settings } from "lucide-react";
 import { AdminDashboard } from "./AdminDashboard";
 import { PendingReservations } from "./PendingReservations";
 import { OwnersDirectory } from "./OwnersDirectory";
 import { GuestsDirectory } from "./GuestsDirectory";
+import { PoolConfigSettings } from "./PoolConfigSettings";
 import type { Reservation, Owner } from "../../types";
 
 type StaffRole = 'ADMIN' | 'RECEPTIONIST';
@@ -29,7 +30,7 @@ export function AdminView({
 
   return (
     <Tabs defaultValue="dashboard" className="space-y-6">
-      <TabsList className={`grid w-full max-w-2xl ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}>
+      <TabsList className={`grid w-full max-w-3xl ${isAdmin ? 'grid-cols-5' : 'grid-cols-3'}`}>
         <TabsTrigger value="dashboard" className="flex items-center gap-2">
           <LayoutDashboard className="h-4 w-4" />
           <span className="hidden sm:inline">Dashboard</span>
@@ -48,6 +49,12 @@ export function AdminView({
           <UserPlus className="h-4 w-4" />
           <span className="hidden sm:inline">Huéspedes</span>
         </TabsTrigger>
+        {isAdmin && (
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">Configuración</span>
+          </TabsTrigger>
+        )}
       </TabsList>
 
       <TabsContent value="dashboard">
@@ -72,6 +79,12 @@ export function AdminView({
       <TabsContent value="guests">
         <GuestsDirectory useMockData={useMockData} />
       </TabsContent>
+
+      {isAdmin && (
+        <TabsContent value="settings">
+          <PoolConfigSettings useMockData={useMockData} />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
