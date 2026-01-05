@@ -3,6 +3,8 @@ import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +16,14 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -21,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { Users, Search, Trash2, Plane, UserCheck, Key, Loader2, Home } from "lucide-react";
+import { Users, Search, Trash2, Plane, UserCheck, Key, Loader2, Home, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
@@ -69,6 +79,20 @@ export function GuestsDirectory({ useMockData = true }: GuestsDirectoryProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [guestToDelete, setGuestToDelete] = useState<Guest | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Estado para el formulario de nuevo huésped
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newGuest, setNewGuest] = useState({
+    firstName: "",
+    lastName: "",
+    documentType: "DNI",
+    documentNumber: "",
+    email: "",
+    phone: "",
+    departmentCode: "",
+    guestType: "AIRBNB",
+  });
 
   useEffect(() => {
     const fetchGuests = async () => {
@@ -135,6 +159,80 @@ export function GuestsDirectory({ useMockData = true }: GuestsDirectoryProps) {
     }
   };
 
+  const handleCreateGuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newGuest.firstName || !newGuest.lastName || !newGuest.documentNumber || !newGuest.departmentCode) {
+      toast.error("Campos requeridos", {
+        description: "Por favor completa todos los campos obligatorios",
+      });
+      return;
+    }
+
+    setCreating(true);
+
+    try {
+      const result = await api.registerGuest({
+        firstName: newGuest.firstName,
+        lastName: newGuest.lastName,
+        documentType: newGuest.documentType,
+        documentNumber: newGuest.documentNumber,
+        email: newGuest.email || undefined,
+        phone: newGuest.phone || undefined,
+        departmentCode: newGuest.departmentCode.toUpperCase(),
+        guestType: newGuest.guestType,
+      });
+
+      if (result.error) {
+        toast.error("Error al registrar", {
+          description: result.error,
+        });
+        return;
+      }
+
+      if (result.data) {
+        // Agregar el nuevo huésped a la lista
+        const newGuestData: Guest = {
+          id: result.data.guest.id,
+          firstName: newGuest.firstName,
+          lastName: newGuest.lastName,
+          documentType: newGuest.documentType as 'DNI' | 'PASSPORT' | 'CE' | 'OTHER',
+          documentNumber: newGuest.documentNumber,
+          email: newGuest.email || null,
+          phone: newGuest.phone || null,
+          departmentCode: newGuest.departmentCode.toUpperCase(),
+          guestType: newGuest.guestType as 'AIRBNB' | 'FRIEND' | 'TENANT',
+          createdAt: new Date().toISOString(),
+        };
+
+        setGuests([newGuestData, ...guests]);
+
+        toast.success(result.data.isNew ? "Huésped registrado" : "Huésped ya existente", {
+          description: `${newGuest.firstName} ${newGuest.lastName} - Depto ${newGuest.departmentCode.toUpperCase()}`,
+        });
+
+        // Limpiar formulario y cerrar diálogo
+        setNewGuest({
+          firstName: "",
+          lastName: "",
+          documentType: "DNI",
+          documentNumber: "",
+          email: "",
+          phone: "",
+          departmentCode: "",
+          guestType: "AIRBNB",
+        });
+        setCreateDialogOpen(false);
+      }
+    } catch (error: any) {
+      toast.error("Error al registrar", {
+        description: error.message || "No se pudo registrar el huésped",
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const filteredGuests = guests.filter((guest) => {
     const search = searchTerm.toLowerCase();
     return (
@@ -157,11 +255,163 @@ export function GuestsDirectory({ useMockData = true }: GuestsDirectoryProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Huéspedes / Invitados</h2>
-        <p className="text-muted-foreground">
-          Directorio de todos los visitantes registrados
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Huéspedes / Invitados</h2>
+          <p className="text-muted-foreground">
+            Directorio de todos los visitantes registrados
+          </p>
+        </div>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Agregar Huésped
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Registrar Nuevo Huésped
+              </DialogTitle>
+              <DialogDescription>
+                Completa los datos del huésped o invitado
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreateGuest} className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">Nombres *</Label>
+                  <Input
+                    id="firstName"
+                    value={newGuest.firstName}
+                    onChange={(e) => setNewGuest({ ...newGuest, firstName: e.target.value })}
+                    placeholder="Juan"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Apellidos *</Label>
+                  <Input
+                    id="lastName"
+                    value={newGuest.lastName}
+                    onChange={(e) => setNewGuest({ ...newGuest, lastName: e.target.value })}
+                    placeholder="Pérez"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="documentType">Tipo Documento *</Label>
+                  <Select
+                    value={newGuest.documentType}
+                    onValueChange={(value) => setNewGuest({ ...newGuest, documentType: value })}
+                  >
+                    <SelectTrigger id="documentType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DNI">DNI</SelectItem>
+                      <SelectItem value="PASSPORT">Pasaporte</SelectItem>
+                      <SelectItem value="CE">C. Extranjería</SelectItem>
+                      <SelectItem value="OTHER">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="documentNumber">Nro. Documento *</Label>
+                  <Input
+                    id="documentNumber"
+                    value={newGuest.documentNumber}
+                    onChange={(e) => setNewGuest({ ...newGuest, documentNumber: e.target.value })}
+                    placeholder="12345678"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="departmentCode">Departamento *</Label>
+                  <Input
+                    id="departmentCode"
+                    value={newGuest.departmentCode}
+                    onChange={(e) => setNewGuest({ ...newGuest, departmentCode: e.target.value.toUpperCase() })}
+                    placeholder="603A"
+                    maxLength={5}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="guestType">Tipo de Huésped *</Label>
+                  <Select
+                    value={newGuest.guestType}
+                    onValueChange={(value) => setNewGuest({ ...newGuest, guestType: value })}
+                  >
+                    <SelectTrigger id="guestType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AIRBNB">
+                        <div className="flex items-center gap-2">
+                          <Plane className="h-3 w-3" />
+                          Huésped Airbnb
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="FRIEND">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="h-3 w-3" />
+                          Familiar/Amigo
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="TENANT">
+                        <div className="flex items-center gap-2">
+                          <Key className="h-3 w-3" />
+                          Inquilino
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email (opcional)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newGuest.email}
+                    onChange={(e) => setNewGuest({ ...newGuest, email: e.target.value })}
+                    placeholder="correo@ejemplo.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Teléfono (opcional)</Label>
+                  <Input
+                    id="phone"
+                    value={newGuest.phone}
+                    onChange={(e) => setNewGuest({ ...newGuest, phone: e.target.value })}
+                    placeholder="999888777"
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={creating}>
+                {creating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Registrando...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Registrar Huésped
+                  </>
+                )}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="relative">
