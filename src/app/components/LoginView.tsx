@@ -5,6 +5,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Building, Home, Shield, ArrowLeft, Loader2, UserPlus, Users } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import api from "../services/api";
 
 export type StaffRole = 'ADMIN' | 'RECEPTIONIST';
@@ -419,6 +420,23 @@ export function LoginView({ onLogin, onStaffLogin, onGuestLogin }: LoginViewProp
               Personal / Administrador
             </Button>
           </CardContent>
+
+          {/* QR Code para acceso rápido */}
+          <div className="border-t px-6 py-4">
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-sm text-muted-foreground text-center">
+                Escanea el código QR para acceder desde otro dispositivo
+              </p>
+              <div className="bg-white p-3 rounded-lg shadow-sm border">
+                <QRCodeSVG
+                  value={window.location.href}
+                  size={120}
+                  level="M"
+                  includeMargin={false}
+                />
+              </div>
+            </div>
+          </div>
         </Card>
       </div>
     );
